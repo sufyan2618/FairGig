@@ -1,4 +1,4 @@
-import DashboardPage from "./pages/DashboardPage";
+import DashboardPage from "./pages/worker/DashboardPage";
 
 const App = () => <DashboardPage />;
 
