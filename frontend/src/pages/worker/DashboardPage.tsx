@@ -12,7 +12,7 @@ import {
 import { useActiveAssignmentsApi } from "../../hooks/api/useActiveAssignmentsApi";
 import { useDashboardStatsApi } from "../../hooks/api/useDashboardStatsApi";
 import { useShiftLogsApi } from "../../hooks/api/useShiftLogsApi";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames, formatHours, formatPercentage } from "../../utils/functions";
 import {
   filterShiftLogs,
@@ -29,8 +29,7 @@ const avatarTones = [
 ];
 
 const DashboardPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] =
-    useState<SidebarItemId>("log-shift");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<ShiftFilterValue>("all");
@@ -65,7 +64,7 @@ const DashboardPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
