@@ -4,7 +4,7 @@ import { LabeledSelectField } from "../../components/common/LabeledSelectField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames } from "../../utils/functions";
 
 type GrievanceStatus = "Escalated" | "Resolved" | "Open";
@@ -111,7 +111,7 @@ const getStatusClasses = (status: GrievanceStatus) => {
 };
 
 const GrievanceBoardPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("greivance-board");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -171,7 +171,7 @@ const GrievanceBoardPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">

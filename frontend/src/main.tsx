@@ -27,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/dashboard/grievance-board" element={<GrievanceBoardPage />} />
         <Route path="/dashboard/profile-settings" element={<ProfileSettingsPage />} />
         <Route path="/dashboard/upload-screenshot" element={<UploadScreenshotPage />} />
+        <Route path="/dashboard/upload-screenshots" element={<UploadScreenshotPage />} />
+        <Route path="/dashboard/greivance-board" element={<GrievanceBoardPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

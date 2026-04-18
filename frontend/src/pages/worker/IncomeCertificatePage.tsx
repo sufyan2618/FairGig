@@ -4,7 +4,7 @@ import { LabeledTextField } from "../../components/common/LabeledTextField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { formatCurrency, formatHours } from "../../utils/functions";
 
 type VerificationStatus = "Pending" | "Verified" | "Flagged" | "Unverifiable";
@@ -84,7 +84,7 @@ const earningEntries: EarningEntry[] = [
 ];
 
 const IncomeCertificatePage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("income-certificate");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -171,7 +171,7 @@ const IncomeCertificatePage = () => {
           <Sidebar
             items={sidebarItems}
             activeItemId={activeSidebarItem}
-            onItemSelect={setActiveSidebarItem}
+            onItemSelect={onSidebarItemSelect}
           />
         </div>
 

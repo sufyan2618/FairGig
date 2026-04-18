@@ -4,7 +4,7 @@ import { LabeledSelectField } from "../../components/common/LabeledSelectField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames } from "../../utils/functions";
 
 type VerificationStatus = "Pending" | "Verified" | "Flagged" | "Unverifiable";
@@ -69,7 +69,7 @@ const getStatusBadgeClass = (status: VerificationStatus) => {
 };
 
 const UploadScreenshotPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("upload-screenshots");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedShiftId, setSelectedShiftId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -136,7 +136,7 @@ const UploadScreenshotPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">

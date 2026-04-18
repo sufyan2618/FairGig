@@ -4,7 +4,7 @@ import { LabeledSelectField } from "../../components/common/LabeledSelectField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames } from "../../utils/functions";
 
 type VerificationStatus = "Pending" | "Verified" | "Flagged" | "Unverifiable";
@@ -111,7 +111,7 @@ const formatCurrency = (amount: number) =>
 const isEntryEditable = (status: VerificationStatus) => status === "Pending" || status === "Flagged";
 
 const MyEarningsPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("my-earnings");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
@@ -148,7 +148,7 @@ const MyEarningsPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
