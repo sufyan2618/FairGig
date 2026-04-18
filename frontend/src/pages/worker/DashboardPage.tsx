@@ -12,7 +12,7 @@ import {
 import { useActiveAssignmentsApi } from "../../hooks/api/useActiveAssignmentsApi";
 import { useDashboardStatsApi } from "../../hooks/api/useDashboardStatsApi";
 import { useShiftLogsApi } from "../../hooks/api/useShiftLogsApi";
-import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
+import type { SidebarItemId } from "../../types/dashboard";
 import { classNames, formatHours, formatPercentage } from "../../utils/functions";
 import {
   filterShiftLogs,
@@ -29,7 +29,8 @@ const avatarTones = [
 ];
 
 const DashboardPage = () => {
-  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
+  const [activeSidebarItem, setActiveSidebarItem] =
+    useState<SidebarItemId>("log-shift");
   const [searchQuery, setSearchQuery] = useState("");
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<ShiftFilterValue>("all");
@@ -64,7 +65,7 @@ const DashboardPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={onSidebarItemSelect}
+          onItemSelect={setActiveSidebarItem}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
@@ -241,11 +242,11 @@ const DashboardPage = () => {
                             {log.status}
                           </span>
                         </td>
-                        <td className="rounded-r-xl px-3 py-3">
-                          <div className="flex items-center gap-3">
+                        <td className="rounded-r-xl px-3 py-3 min-w-[132px]">
+                          <div className="flex items-center gap-2 sm:gap-3 whitespace-nowrap">
                             <button
                               type="button"
-                              className="text-sm font-medium text-[#496ab3] hover:text-[#1d1d1d]"
+                              className="shrink-0 text-sm font-medium text-[#496ab3] hover:text-[#1d1d1d]"
                             >
                               Edit
                             </button>
@@ -253,7 +254,7 @@ const DashboardPage = () => {
                               type="button"
                               onClick={() => handleToggleAction(log.id)}
                               className={classNames(
-                                "relative inline-flex h-6 w-11 items-center overflow-hidden rounded-full p-0.5 transition-colors",
+                                "relative inline-flex h-6 w-11 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-colors",
                                 log.isActionEnabled
                                   ? "bg-[#1f2024]"
                                   : "bg-[#d3d7df]",

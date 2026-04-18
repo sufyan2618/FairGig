@@ -110,8 +110,8 @@ const ProfileSettingsPage = () => {
     checked: boolean;
     onToggle: () => void;
   }) => (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3">
-      <div>
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3 sm:items-center sm:gap-4">
+      <div className="min-w-0">
         <p className="text-sm font-medium text-[#1d1d1d]">{label}</p>
         <p className="mt-0.5 text-xs text-[#667085]">{description}</p>
       </div>
@@ -120,7 +120,7 @@ const ProfileSettingsPage = () => {
         type="button"
         onClick={onToggle}
         className={classNames(
-          "relative inline-flex h-6 w-11 items-center overflow-hidden rounded-full p-0.5 transition-colors",
+          "relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-colors sm:mt-0",
           checked ? "bg-[#1f2024]" : "bg-[#d3d7df]",
         )}
         aria-pressed={checked}
