@@ -4,7 +4,7 @@ import { LabeledSelectField } from "../../components/common/LabeledSelectField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames, formatCurrency, formatPercentage } from "../../utils/functions";
 
 type Timeframe = "weekly" | "monthly";
@@ -223,7 +223,7 @@ const MultiSeriesLineChart = ({ data }: { data: CommissionPoint[] }) => {
 };
 
 const MyAnalyticsPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("my-analytics");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [timeframe, setTimeframe] = useState<Timeframe>("weekly");
 
@@ -246,7 +246,7 @@ const MyAnalyticsPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">

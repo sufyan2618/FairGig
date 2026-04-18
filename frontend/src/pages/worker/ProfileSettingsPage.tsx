@@ -5,7 +5,7 @@ import { LabeledTextField } from "../../components/common/LabeledTextField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames } from "../../utils/functions";
 
 const cityOptions = [
@@ -36,7 +36,7 @@ interface NotificationPrefs {
 }
 
 const ProfileSettingsPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("profile-settings");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
 
   const [name, setName] = useState("Ali Raza");
@@ -120,7 +120,7 @@ const ProfileSettingsPage = () => {
         type="button"
         onClick={onToggle}
         className={classNames(
-          "relative h-6 w-11 rounded-full transition-colors",
+          "relative inline-flex h-6 w-11 items-center overflow-hidden rounded-full p-0.5 transition-colors",
           checked ? "bg-[#1f2024]" : "bg-[#d3d7df]",
         )}
         aria-pressed={checked}
@@ -128,8 +128,8 @@ const ProfileSettingsPage = () => {
       >
         <span
           className={classNames(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-            checked ? "translate-x-[1.35rem]" : "translate-x-0.5",
+            "h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+            checked ? "translate-x-5" : "translate-x-0",
           )}
         />
       </button>
@@ -142,7 +142,7 @@ const ProfileSettingsPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">

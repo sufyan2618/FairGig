@@ -1,75 +1,19 @@
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr
 
-from services.authService.app.models.user import OrderStatus
-
-
-class CartItemCreate(BaseModel):
-    product_id: int = Field(gt=0)
-    quantity: int = Field(default=1, ge=1)
+from app.models.user import UserRole
 
 
-class CartItemUpdate(BaseModel):
-    quantity: int = Field(ge=1)
-
-
-class CartItemResponse(BaseModel):
+class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    user_id: str
-    user_email: str | None = None
-    product_id: int
-    product_title: str
-    product_slug: str
-    unit_price: int
-    quantity: int
-    image_url: str | None = None
+    id: UUID
+    email: EmailStr
+    full_name: str
+    role: UserRole
+    is_email_verified: bool
+    is_active: bool
     created_at: datetime
-    updated_at: datetime
-
-
-class CartResponse(BaseModel):
-    items: list[CartItemResponse]
-    total_amount: int
-
-
-class OrderCreate(BaseModel):
-    notes: str | None = None
-
-
-class OrderItemResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    order_id: int
-    product_id: int
-    product_title: str
-    product_slug: str
-    unit_price: int
-    quantity: int
-    image_url: str | None = None
-    created_at: datetime
-
-
-class OrderResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    user_id: str
-    user_email: str | None = None
-    status: OrderStatus
-    total_amount: int
-    items: list[OrderItemResponse]
-    created_at: datetime
-    updated_at: datetime
-
-
-class OrderListResponse(BaseModel):
-    orders: list[OrderResponse]
-
-
-class MessageResponse(BaseModel):
-    success: bool
-    message: str
+    last_login_at: datetime | None

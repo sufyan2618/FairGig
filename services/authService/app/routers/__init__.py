@@ -1,3 +1,3 @@
-from services.authService.app.routers.user import router
+from app.routers.auth import router
 
 __all__ = ["router"]
