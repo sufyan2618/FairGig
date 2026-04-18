@@ -1,26 +1,26 @@
 import { useMemo, useState } from "react";
-import { Button } from "../components/common/Button";
-import { Icon } from "../components/common/Icon";
-import { LabeledSelectField } from "../components/common/LabeledSelectField";
-import { Sidebar } from "../components/layout/Sidebar";
-import { TopHeader } from "../components/layout/TopHeader";
+import { Button } from "../../components/common/Button";
+import { Icon } from "../../components/common/Icon";
+import { LabeledSelectField } from "../../components/common/LabeledSelectField";
+import { Sidebar } from "../../components/layout/Sidebar";
+import { TopHeader } from "../../components/layout/TopHeader";
 import {
   projectFilterOptions,
   sidebarItems,
   statusFilterOptions,
-} from "../data/dashboardData";
-import { useActiveAssignmentsApi } from "../hooks/api/useActiveAssignmentsApi";
-import { useDashboardStatsApi } from "../hooks/api/useDashboardStatsApi";
-import { useShiftLogsApi } from "../hooks/api/useShiftLogsApi";
-import type { SidebarItemId } from "../types/dashboard";
-import { classNames, formatHours, formatPercentage } from "../utils/functions";
+} from "../../data/dashboardData";
+import { useActiveAssignmentsApi } from "../../hooks/api/useActiveAssignmentsApi";
+import { useDashboardStatsApi } from "../../hooks/api/useDashboardStatsApi";
+import { useShiftLogsApi } from "../../hooks/api/useShiftLogsApi";
+import type { SidebarItemId } from "../../types/dashboard";
+import { classNames, formatHours, formatPercentage } from "../../utils/functions";
 import {
   filterShiftLogs,
   getAssignmentStatusClass,
   getProgressRingStyle,
   getShiftStatusClass,
   type ShiftFilterValue,
-} from "../utils/dashboard/dashboard.utils";
+} from "../../utils/dashboard/dashboard.utils";
 
 const avatarTones = [
   "bg-blue-100 text-blue-600",
