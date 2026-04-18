@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers.order import router as order_router
+from services.authService.app.routers.user import router as order_router
 
 load_dotenv(f".env.{os.getenv('ENVIRONMENT', 'development')}")
 

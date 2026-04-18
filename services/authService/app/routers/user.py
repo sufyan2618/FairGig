@@ -7,8 +7,8 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies import CurrentUser, get_current_user
-from app.models.order import CartItem, Order, OrderItem
-from app.schemas.order import (
+from services.authService.app.models.user import CartItem, Order, OrderItem
+from services.authService.app.schemas.user import (
 	CartItemCreate,
 	CartItemUpdate,
 	CartResponse,
