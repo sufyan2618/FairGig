@@ -1,24 +1,28 @@
 import json
-import os
+from typing import Annotated
 
 from pydantic import ConfigDict, Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, NoDecode
 
 
 class Settings(BaseSettings):
     model_config = ConfigDict(
         extra="ignore",
-        env_file=f".env.{os.getenv('ENVIRONMENT', 'development')}",
+        env_file=".env.development",
         env_file_encoding="utf-8",
     )
 
-    DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/ecommerce_orders"
-    )
-    SECRET_KEY: str = Field(default="change-this-secret")
-    SERVER_URL: str = Field(default="http://localhost:8000")
-    PRODUCT_SERVICE_URL: str = Field(default="http://localhost:3000/api")
-    ALLOWED_CORS_ORIGINS: list[str] = Field(
+    SERVICE_NAME: str = Field(default="anomaly-detection")
+    SERVICE_VERSION: str = Field(default="1.0.0")
+    PORT: int = Field(default=8002)
+    API_PREFIX: str = Field(default="/api/anomaly")
+
+    ACCESS_TOKEN_SECRET: str = Field(default="")
+    JWT_ALGORITHM: str = Field(default="HS256")
+    INTERNAL_SERVICE_API_KEY: str = Field(default="fairgig-internal-dev-key")
+    ALLOW_OPEN_DETECT: bool = Field(default=False)
+
+    ALLOWED_CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:5173", "http://localhost:8080"]
     )
 

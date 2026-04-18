@@ -1,18 +1,16 @@
-import os
-
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers.order import router as order_router
-
-load_dotenv(f".env.{os.getenv('ENVIRONMENT', 'development')}")
+from app.routers.anomaly import router as anomaly_router
 
 app = FastAPI(
-    title="Order Service",
-    description="Ecommerce cart and order management service",
-    version="1.0.0",
+    title="FairGig Anomaly Detection Service",
+    description=(
+        "Stateless FastAPI service for in-memory anomaly detection on gig worker "
+        "earnings histories using Pandas, NumPy, and SciPy."
+    ),
+    version=settings.SERVICE_VERSION,
 )
 
 app.add_middleware(
@@ -23,9 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(order_router, prefix="/api")
+app.include_router(anomaly_router, prefix=settings.API_PREFIX, tags=["anomaly"])
 
 
-@app.get("/api/health")
+@app.get("/api/health", tags=["system"])
 def health_check() -> dict[str, str]:
-    return {"status": "healthy", "service": "order-service"}
+    return {
+        "status": "ok",
+        "service": settings.SERVICE_NAME,
+        "version": settings.SERVICE_VERSION,
+    }
