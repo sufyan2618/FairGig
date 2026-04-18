@@ -28,6 +28,7 @@ body {
 	from {
 		opacity: 0;
 	}
+
 	to {
 		opacity: 1;
 	}
@@ -38,6 +39,7 @@ body {
 		opacity: 0;
 		transform: translateY(12px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);
@@ -51,5 +53,42 @@ body {
 
 	.animate-fade-up {
 		animation: fade-up 500ms ease-out both;
+	}
+}
+
+.auth-viewport {
+	height: 100dvh;
+	overflow: hidden;
+	padding: 8px 0;
+}
+
+.auth-content {
+	height: calc(100% - 16px) !important;
+	margin: 0 auto;
+	transform-origin: top center;
+	transform: scale(0.95);
+}
+
+@media (max-height: 940px) {
+	.auth-content {
+		transform: scale(0.93);
+	}
+}
+
+@media (max-height: 860px) {
+	.auth-content {
+		transform: scale(0.9);
+	}
+}
+
+@media (max-height: 780px) {
+	.auth-content {
+		transform: scale(0.87);
+	}
+}
+
+@media (max-height: 700px) {
+	.auth-content {
+		transform: scale(0.84);
 	}
 }

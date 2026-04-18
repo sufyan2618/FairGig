@@ -15,6 +15,13 @@ export type IconName =
   | "tool";
 
 export type SidebarItemId =
+  | "advocate-dashboard"
+  | "advocate-commission-tracker"
+  | "advocate-income-distribution-map"
+  | "advocate-vulnerability-flags"
+  | "advocate-grievance-moderation"
+  | "advocate-complaint-analytics"
+  | "advocate-profile-settings"
   | "log-shift"
   | "my-earnings"
   | "upload-screenshots"

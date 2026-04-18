@@ -1,6 +1,7 @@
 import type { SidebarItem, SidebarItemId } from "../../types/dashboard";
 import { classNames } from "../../utils/functions";
 import { Icon } from "../common/Icon";
+import logo from "../../assets/logo.jpeg";
 
 interface SidebarProps {
   items: SidebarItem[];
@@ -11,8 +12,8 @@ interface SidebarProps {
 export const Sidebar = ({ items, activeItemId, onItemSelect }: SidebarProps) => (
   <aside className="w-full bg-[#232429] text-white lg:min-h-screen lg:w-72">
     <div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
-        <span className="text-lg font-bold text-[var(--color-button)]">FG</span>
+      <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-linear-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
+        <img src={logo} alt="FairGig logo" className="h-full w-full object-cover scale-110" />
       </div>
       <div>
         <p className="text-sm font-semibold">FairGig</p>
@@ -32,7 +33,7 @@ export const Sidebar = ({ items, activeItemId, onItemSelect }: SidebarProps) => 
             className={classNames(
               "group flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200",
               isActive
-                ? "bg-[var(--color-button)] text-white shadow-[0_8px_20px_rgba(255,145,77,0.3)]"
+                ? "bg-(--color-button) text-white shadow-[0_8px_20px_rgba(255,145,77,0.3)]"
                 : "text-white/80 hover:bg-white/10 hover:text-white",
             )}
           >
