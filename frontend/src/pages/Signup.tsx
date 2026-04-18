@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLottie } from 'lottie-react'
 import signupAnimation from '../animations/Login verification.json'
 import logo from '../assets/logo.jpeg'
+import { useAuthApi } from '../hooks/api/useAuthApi'
+import type { UserRole } from '../types/auth'
 
 export const Signup = () => {
 	const { View: signupAnimationView } = useLottie({
@@ -12,25 +14,42 @@ export const Signup = () => {
 	})
 
 	const navigate = useNavigate()
+	const { register, isLoading, error, clearError } = useAuthApi()
 	const [fullName, setFullName] = useState('')
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
+	const [role, setRole] = useState<UserRole>('worker')
 	const [message, setMessage] = useState('')
 
-	const onSubmit = (event: React.FormEvent) => {
+	const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
+		clearError()
+		setMessage('')
 
-		localStorage.setItem(
-			'mailflow_mock_signup',
-			JSON.stringify({
-				name: fullName || 'New User',
-				email,
-			}),
-		)
-		localStorage.setItem('mailflow_auth', 'false')
-		setMessage('Mock account created. Please sign in with demo@ecommerce.com / demo123')
+		const normalizedEmail = email.trim().toLowerCase()
 
-		setTimeout(() => navigate('/login'), 900)
+		try {
+			const response = await register({
+				full_name: fullName.trim(),
+				email: normalizedEmail,
+				password,
+				role,
+			})
+
+			setMessage(response.message)
+
+			navigate(`/verify-email-otp?email=${encodeURIComponent(normalizedEmail)}`, {
+				replace: true,
+				state: {
+					toast: {
+						message: response.message,
+						tone: 'success',
+					},
+				},
+			})
+		} catch {
+			return
+		}
 	}
 
 	return (
@@ -49,7 +68,8 @@ export const Signup = () => {
 
 					<h2 className="text-base font-bold tracking-tight sm:text-lg">Launch Campaigns Faster</h2>
 					<p className="mt-1.5 text-sm leading-5 text-[#1D1D1D]/80 sm:text-sm">
-						Create audience segments, schedule sends, and monitor campaign performance from one clean dashboard.
+						Create your FairGig account to track earnings, submit evidence, and collaborate across worker support
+						roles.
 					</p>
 
 					<div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1D1D1D] px-3 py-1.5 text-white" aria-hidden="true">
@@ -64,7 +84,7 @@ export const Signup = () => {
 								R
 							</span>
 						</div>
-						<small className="text-xs text-white/90 sm:text-sm">Built for modern growth teams</small>
+						<small className="text-xs text-white/90 sm:text-sm">Secure onboarding with OTP verification</small>
 					</div>
 				</section>
 
@@ -80,7 +100,7 @@ export const Signup = () => {
 					</div>
 
 					<h1 className="text-lg font-black tracking-tight sm:text-xl">Create account</h1>
-					<p className="mt-1.5 text-sm text-[#1D1D1D]/70">This screen is mocked for now. No backend calls are made.</p>
+					<p className="mt-1.5 text-sm text-[#1D1D1D]/70">Set up your account. We will send a verification OTP to your email.</p>
 
 					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5">
 						<div className="space-y-2">
@@ -93,6 +113,7 @@ export const Signup = () => {
 								placeholder="Jane Doe"
 								value={fullName}
 								onChange={(event) => setFullName(event.target.value)}
+								autoComplete="name"
 								required
 								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
@@ -108,6 +129,7 @@ export const Signup = () => {
 								placeholder="name@company.com"
 								value={email}
 								onChange={(event) => setEmail(event.target.value)}
+								autoComplete="email"
 								required
 								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
@@ -123,18 +145,38 @@ export const Signup = () => {
 								placeholder="Create a password"
 								value={password}
 								onChange={(event) => setPassword(event.target.value)}
+								autoComplete="new-password"
 								required
 								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
 						</div>
 
+						<div className="space-y-2">
+							<label className="text-sm font-medium" htmlFor="role">
+								Role
+							</label>
+							<select
+								id="role"
+								value={role}
+								onChange={(event) => setRole(event.target.value as UserRole)}
+								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
+							>
+								<option value="worker">Worker</option>
+								<option value="verifier">Verifier</option>
+								<option value="advocate">Advocate</option>
+							</select>
+						</div>
+
+						{error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
+
 						{message ? <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
 
 						<button
 							type="submit"
+							disabled={isLoading}
 							className="w-full rounded-xl bg-[#FF914D] px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-95"
 						>
-							Create account
+							{isLoading ? 'Creating account...' : 'Create account'}
 						</button>
 					</form>
 

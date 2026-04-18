@@ -1,13 +1,10 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLottie } from 'lottie-react'
 import loginAnimation from '../animations/Login verification.json'
 import logo from '../assets/logo.jpeg'
-
-const MOCK_EMAIL = 'demo@ecommerce.com'
-const MOCK_PASSWORD = 'demo123'
-const ADVOCATE_EMAIL = 'advocate@fairgig.com'
-const ADVOCATE_PASSWORD = 'advocate123'
+import { useAuthApi } from '../hooks/api/useAuthApi'
+import { getHomeRouteForRole } from '../utils/auth'
 
 export const Login = () => {
 	const { View: loginAnimationView } = useLottie({
@@ -17,46 +14,27 @@ export const Login = () => {
 	})
 
 	const navigate = useNavigate()
+	const { login, setRememberMe, rememberMe, isLoading, error, clearError } = useAuthApi()
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
-	const [remember, setRemember] = useState(false)
-	const [error, setError] = useState('')
 
-	const onSubmit = (event: React.FormEvent) => {
+	const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
-		setError('')
+		clearError()
 
-		const isWorkerLogin = email === MOCK_EMAIL && password === MOCK_PASSWORD
-		const isAdvocateLogin = email === ADVOCATE_EMAIL && password === ADVOCATE_PASSWORD
+		try {
+			const response = await login({
+				email: email.trim().toLowerCase(),
+				password,
+			})
 
-		if (!isWorkerLogin && !isAdvocateLogin) {
-			setError('Invalid credentials. Use demo@ecommerce.com / demo123 or advocate@fairgig.com / advocate123')
+			navigate(getHomeRouteForRole(response.user.role), {
+				replace: true,
+				state: {},
+			})
+		} catch {
 			return
 		}
-
-		const role = isAdvocateLogin ? 'advocate' : 'worker'
-
-		localStorage.setItem('mailflow_auth', 'true')
-		localStorage.setItem('mailflow_role', role)
-		localStorage.setItem(
-			'mailflow_user',
-			JSON.stringify({
-				name: isAdvocateLogin ? 'Advocate User' : 'Demo User',
-				email,
-				role,
-			}),
-		)
-
-		if (remember) {
-			localStorage.setItem('mailflow_remember', 'true')
-		} else {
-			localStorage.removeItem('mailflow_remember')
-		}
-
-		navigate(isAdvocateLogin ? '/advocate/dashboard' : '/dashboard', {
-			replace: true,
-			state: {},
-		})
 	}
 
 	return (
@@ -75,8 +53,8 @@ export const Login = () => {
 
 					<h2 className="text-center text-base font-bold tracking-tight sm:text-lg">Analyze Your Reach</h2>
 					<p className="mt-1.5 text-sm leading-5 text-[#1D1D1D]/80 sm:text-sm">
-						Connect with your audience using our powerful email analytics engine. Track opens, clicks, and
-						conversions in real-time.
+						Track verified earnings, detect unusual deductions, and keep your livelihood records organized in one
+						place.
 					</p>
 
 					<div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1D1D1D] px-3 py-1.5 text-white" aria-hidden="true">
@@ -91,7 +69,7 @@ export const Login = () => {
 								M
 							</span>
 						</div>
-						<small className="text-xs text-white/90 sm:text-sm">Trusted by 10,000+ marketers</small>
+						<small className="text-xs text-white/90 sm:text-sm">Built for workers, verifiers, and advocates</small>
 					</div>
 				</section>
 
@@ -107,7 +85,7 @@ export const Login = () => {
 					</div>
 
 					<h1 className="text-center text-lg font-black tracking-tight sm:text-xl">Welcome back</h1>
-					<p className="mt-1.5 text-center text-sm text-[#1D1D1D]/70">Please enter your details to sign in.</p>
+					<p className="mt-1.5 text-center text-sm text-[#1D1D1D]/70">Sign in to continue to your FairGig dashboard.</p>
 
 					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5">
 						<div className="space-y-2">
@@ -120,6 +98,7 @@ export const Login = () => {
 								placeholder="name@company.com"
 								value={email}
 								onChange={(event) => setEmail(event.target.value)}
+								autoComplete="email"
 								required
 								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
@@ -141,6 +120,7 @@ export const Login = () => {
 								placeholder="Enter your password"
 								value={password}
 								onChange={(event) => setPassword(event.target.value)}
+								autoComplete="current-password"
 								required
 								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
@@ -150,8 +130,8 @@ export const Login = () => {
 							<input
 								id="rememberMe"
 								type="checkbox"
-								checked={remember}
-								onChange={(event) => setRemember(event.target.checked)}
+								checked={rememberMe}
+								onChange={(event) => setRememberMe(event.target.checked)}
 								className="h-4 w-4 rounded border-[#1D1D1D]/20 text-[#FF914D] focus:ring-[#FF914D]"
 							/>
 							<span>Remember me for 30 days</span>
@@ -161,31 +141,16 @@ export const Login = () => {
 
 						<button
 							type="submit"
+							disabled={isLoading}
 							className="w-full rounded-xl bg-[#FF914D] px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-95"
 						>
-							Sign in
+							{isLoading ? 'Signing in...' : 'Sign in'}
 						</button>
 
-						<div className="flex items-center gap-3 py-1">
-							<span className="h-px flex-1 bg-[#1D1D1D]/15" />
-							<small className="text-xs text-[#1D1D1D]/60">Or continue with</small>
-							<span className="h-px flex-1 bg-[#1D1D1D]/15" />
-						</div>
-
-						<div className="grid grid-cols-2 gap-3" aria-hidden="true">
-							<button
-								type="button"
-								className="rounded-xl border border-[#1D1D1D]/15 bg-white px-3.5 py-2 text-sm font-medium hover:bg-[#FFF7F0]"
-							>
-								Google
-							</button>
-							<button
-								type="button"
-								className="rounded-xl border border-[#1D1D1D]/15 bg-[#1D1D1D] px-3.5 py-2 text-sm font-medium text-white hover:bg-[#2B2B2B]"
-							>
-								GitHub
-							</button>
-						</div>
+						<p className="rounded-xl border border-[#FF914D]/20 bg-[#FFF8F2] px-3 py-2 text-xs text-[#8A4B23]">
+							Use the same email and password you registered with. If your access token expires, FairGig refreshes
+							it automatically during active sessions.
+						</p>
 					</form>
 
 					<p className="mt-2.5 text-center text-sm text-[#1D1D1D]/75">

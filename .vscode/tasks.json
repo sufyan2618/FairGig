@@ -1,0 +1,126 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "FairGig Dev: Auth Service",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/services/authService\"; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Earnings Service",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/services/earningsService\"; bun run dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Anomaly Service",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/services/anamolyService\"; & \"${workspaceFolder}/services/anamolyService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8002",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Grievance Service",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/services/grievanceService\"; npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Analytics Service",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/services/analyticsService\"; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8003",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Certificate Service",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/services/certificateService\"; & \"${workspaceFolder}/services/certificateService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8004",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: API Gateway",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/ApiGateway\"; node dev-gateway.mjs",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Frontend",
+      "type": "shell",
+      "command": "Set-Location \"${workspaceFolder}/frontend\"; pnpm run dev -- --host 0.0.0.0 --port 5173",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Stop API Gateway",
+      "type": "shell",
+      "command": "$gatewayPid = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($gatewayPid) { Stop-Process -Id $gatewayPid -Force; Write-Output \"Stopped gateway process $gatewayPid\" } else { Write-Output \"No API gateway process listening on port 8080\" }",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

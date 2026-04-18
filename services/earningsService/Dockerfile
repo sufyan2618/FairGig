@@ -7,6 +7,6 @@ RUN bun install --frozen-lockfile || bun install
 
 COPY . .
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["sh", "-c", "bun run apply:migrations && bun src/index.ts"]

@@ -1,0 +1,84 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FairGig Dev: Auth Service",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/services/authService\"; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Earnings Service",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/services/earningsService\"; bun run dev",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Anomaly Service",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/services/anamolyService\"; & \"${workspaceFolder}/services/anamolyService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8002",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Grievance Service",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/services/grievanceService\"; npm run dev",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Analytics Service",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/services/analyticsService\"; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8003",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Certificate Service",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/services/certificateService\"; & \"${workspaceFolder}/services/certificateService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8004",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: API Gateway",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/ApiGateway\"; node dev-gateway.mjs",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Frontend",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "Set-Location \"${workspaceFolder}/frontend\"; pnpm run dev -- --host 0.0.0.0 --port 5173",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "FairGig Dev: Stop API Gateway",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "$gatewayPid = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($gatewayPid) { Stop-Process -Id $gatewayPid -Force; Write-Output \"Stopped gateway process $gatewayPid\" } else { Write-Output \"No API gateway process listening on port 8080\" }",
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "FairGig Dev: Full Stack (F5)",
+      "configurations": [
+        "FairGig Dev: Auth Service",
+        "FairGig Dev: Earnings Service",
+        "FairGig Dev: Anomaly Service",
+        "FairGig Dev: Grievance Service",
+        "FairGig Dev: Analytics Service",
+        "FairGig Dev: Certificate Service",
+        "FairGig Dev: API Gateway",
+        "FairGig Dev: Frontend"
+      ],
+      "stopAll": true
+    }
+  ]
+}

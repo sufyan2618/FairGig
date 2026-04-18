@@ -1,7 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { useShallow } from 'zustand/react/shallow'
 import { Login } from './pages/Login.tsx'
 import { Signup } from './pages/Signup.tsx'
+import { VerifyEmailOtp } from './pages/VerifyEmailOtp.tsx'
+import { ForgotPassword } from './pages/ForgotPassword.tsx'
+import { ResetPassword } from './pages/ResetPassword.tsx'
 import AdvocateDashboardPage from './pages/advocate/DashboardPage.tsx'
 import CommissionRateTrackerPage from './pages/advocate/CommissionRateTrackerPage.tsx'
 import ComplaintAnalyticsPage from './pages/advocate/ComplaintAnalyticsPage.tsx'
@@ -22,43 +26,17 @@ import IncomeCertificatePage from './pages/worker/IncomeCertificatePage.tsx'
 import GrievanceBoardPage from './pages/worker/GrievanceBoardPage.tsx'
 import ProfileSettingsPage from './pages/worker/ProfileSettingsPage.tsx'
 import UploadScreenshotPage from './pages/worker/UploadScreenshotPage.tsx'
-
-type UserRole = 'worker' | 'advocate' | 'verifier'
+import { useAuthStore } from './store/authStore'
+import { getHomeRouteForRole } from './utils/auth'
+import type { UserRole } from './types/auth'
 
 interface ToastState {
 	message: string
 	tone?: 'error' | 'success'
 }
 
-const getIsAuthenticated = () => localStorage.getItem('mailflow_auth') === 'true'
-
-const getUserRole = (): UserRole => {
-	const role = localStorage.getItem('mailflow_role')
-
-	if (role === 'advocate') {
-		return 'advocate'
-	}
-
-	if (role === 'verifier') {
-		return 'verifier'
-	}
-
-	return 'worker'
-}
-
-const getHomeRouteForRole = (role: UserRole): string => {
-	if (role === 'advocate') {
-		return '/advocate/dashboard'
-	}
-
-	if (role === 'verifier') {
-		return '/verifier/dashboard'
-	}
-
-	return '/dashboard'
-}
-
 const RouteToast = () => {
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 	const location = useLocation()
 	const navigate = useNavigate()
 	const [toast, setToast] = useState<ToastState | null>(null)
@@ -70,7 +48,7 @@ const RouteToast = () => {
 			return
 		}
 
-		if (state.toast.message === 'Please sign in first.' && getIsAuthenticated()) {
+		if (state.toast.message === 'Please sign in first.' && isAuthenticated) {
 			navigate(location.pathname, { replace: true, state: {} })
 			return
 		}
@@ -80,7 +58,7 @@ const RouteToast = () => {
 
 		const timeout = window.setTimeout(() => setToast(null), 2800)
 		return () => window.clearTimeout(timeout)
-	}, [location, navigate])
+	}, [isAuthenticated, location, navigate])
 
 	if (!toast) {
 		return null
@@ -107,25 +85,84 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ allowedRole, children }: ProtectedRouteProps) => {
-	void allowedRole
+	const { hasHydrated, isAuthenticated, user } = useAuthStore(
+		useShallow((state) => ({
+			hasHydrated: state.hasHydrated,
+			isAuthenticated: state.isAuthenticated,
+			user: state.user,
+		})),
+	)
 
-	if (!getIsAuthenticated()) {
+	if (!hasHydrated) {
+		return null
+	}
+
+	if (!isAuthenticated || !user) {
 		return <Navigate to="/login" replace state={{ toast: { message: 'Please sign in first.', tone: 'error' } }} />
+	}
+
+	if (user.role !== allowedRole) {
+		return (
+			<Navigate
+				to={getHomeRouteForRole(user.role)}
+				replace
+				state={{
+					toast: {
+						message: 'Page not found or access denied. Redirected to your dashboard.',
+						tone: 'error',
+					},
+				}}
+			/>
+		)
+	}
+
+	return <>{children}</>
+}
+
+interface PublicOnlyRouteProps {
+	children: ReactNode
+}
+
+const PublicOnlyRoute = ({ children }: PublicOnlyRouteProps) => {
+	const { hasHydrated, isAuthenticated, user } = useAuthStore(
+		useShallow((state) => ({
+			hasHydrated: state.hasHydrated,
+			isAuthenticated: state.isAuthenticated,
+			user: state.user,
+		})),
+	)
+
+	if (!hasHydrated) {
+		return null
+	}
+
+	if (isAuthenticated && user) {
+		return <Navigate to={getHomeRouteForRole(user.role)} replace />
 	}
 
 	return <>{children}</>
 }
 
 const FallbackRedirect = () => {
-	if (!getIsAuthenticated()) {
+	const { hasHydrated, isAuthenticated, user } = useAuthStore(
+		useShallow((state) => ({
+			hasHydrated: state.hasHydrated,
+			isAuthenticated: state.isAuthenticated,
+			user: state.user,
+		})),
+	)
+
+	if (!hasHydrated) {
+		return null
+	}
+
+	if (!isAuthenticated || !user) {
 		return <Navigate to="/login" replace />
 	}
 
-	const role = getUserRole()
-
 	return (
 		<Navigate
-			to={getHomeRouteForRole(role)}
+			to={getHomeRouteForRole(user.role)}
 			replace
 			state={{
 				toast: {
@@ -141,8 +178,46 @@ const AppRoutes = () => (
 	<>
 		<RouteToast />
 		<Routes>
-			<Route path="/login" element={<Login />} />
-			<Route path="/signup" element={<Signup />} />
+			<Route
+				path="/login"
+				element={
+					<PublicOnlyRoute>
+						<Login />
+					</PublicOnlyRoute>
+				}
+			/>
+			<Route
+				path="/signup"
+				element={
+					<PublicOnlyRoute>
+						<Signup />
+					</PublicOnlyRoute>
+				}
+			/>
+			<Route
+				path="/verify-email-otp"
+				element={
+					<PublicOnlyRoute>
+						<VerifyEmailOtp />
+					</PublicOnlyRoute>
+				}
+			/>
+			<Route
+				path="/forgot-password"
+				element={
+					<PublicOnlyRoute>
+						<ForgotPassword />
+					</PublicOnlyRoute>
+				}
+			/>
+			<Route
+				path="/reset-password"
+				element={
+					<PublicOnlyRoute>
+						<ResetPassword />
+					</PublicOnlyRoute>
+				}
+			/>
 
 			<Route
 				path="/advocate/dashboard"
