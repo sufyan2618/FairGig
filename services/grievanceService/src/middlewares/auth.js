@@ -5,6 +5,23 @@ import { env } from "../config/env.js";
 import { raise } from "../utils/httpError.js";
 
 export const requireAuth = () => (req, _res, next) => {
+    const forwardedUserId = req.header("x-user-id");
+    const forwardedRole = req.header("x-user-role");
+
+    // When called through API Gateway, trust introspected identity headers.
+    if (forwardedUserId && forwardedRole) {
+        if (!ALLOWED_ROLES.includes(forwardedRole)) {
+            raise(403, "FORBIDDEN", "Token role is invalid.");
+        }
+
+        req.auth = {
+            userId: forwardedUserId,
+            role: forwardedRole,
+        };
+
+        return next();
+    }
+
     const authorization = req.header("Authorization");
     if (!authorization || !authorization.startsWith("Bearer ")) {
         raise(401, "UNAUTHORIZED", "Missing or invalid Bearer token.");

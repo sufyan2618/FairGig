@@ -9,7 +9,7 @@ const ROUTES = [
   { prefix: "/api/earnings/", target: "http://127.0.0.1:3001", requiresAuth: true },
   { prefix: "/api/analytics/", target: "http://127.0.0.1:8003", requiresAuth: true },
   { prefix: "/api/anomaly/", target: "http://127.0.0.1:8002", requiresAuth: true },
-  { prefix: "/api/grievances/", target: "http://127.0.0.1:4000", requiresAuth: true },
+  { prefix: "/api/grievances/", target: "http://127.0.0.1:3002", requiresAuth: true },
   { prefix: "/api/certificate/", target: "http://127.0.0.1:8004", requiresAuth: true },
 ];
 
@@ -40,8 +40,13 @@ function setCorsHeaders(req, res) {
   );
 }
 
+function matchesRoutePrefix(pathname, prefix) {
+  const normalizedPrefix = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
+  return pathname === normalizedPrefix || pathname.startsWith(`${normalizedPrefix}/`);
+}
+
 function resolveRoute(pathname) {
-  return ROUTES.find((route) => pathname.startsWith(route.prefix));
+  return ROUTES.find((route) => matchesRoutePrefix(pathname, route.prefix));
 }
 
 async function readRequestBody(req) {

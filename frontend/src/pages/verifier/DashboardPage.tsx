@@ -1,63 +1,87 @@
-import { useMemo, useState } from "react";
-import { Button } from "../../components/common/Button";
-import { Icon } from "../../components/common/Icon";
-import { TopHeader } from "../../components/layout/TopHeader";
-import { useVerificationQueueApi } from "../../hooks/api/useVerificationQueueApi";
-import { useVerifierSidebarNavigation } from "../../hooks/useVerifierSidebarNavigation";
-import type { VerifierQuickStat } from "../../types/verifier";
-import { classNames } from "../../utils/functions";
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '../../components/common/Button'
+import { Icon } from '../../components/common/Icon'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { useVerifierVerificationApi } from '../../hooks/api/useVerifierVerificationApi'
+import { useVerifierSidebarNavigation } from '../../hooks/useVerifierSidebarNavigation'
+import type { VerifierQuickStat } from '../../types/verifier'
+import { classNames } from '../../utils/functions'
 
 const formatCount = (value: number): string =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+  new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)
+
+const formatLastSynced = (isoDateTime: string): string => {
+  if (!isoDateTime) {
+    return 'Not synced yet'
+  }
+
+  const date = new Date(isoDateTime)
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 const VerifierDashboardPage = () => {
   const { sidebarItems, activeSidebarItem, onSidebarItemSelect } =
-    useVerifierSidebarNavigation();
-  const { data: queueSubmissions } = useVerificationQueueApi();
-  const [searchQuery, setSearchQuery] = useState("");
+    useVerifierSidebarNavigation()
+  const {
+    dashboardStats,
+    isDashboardLoading,
+    error,
+    fetchDashboardStats,
+    clearError,
+  } = useVerifierVerificationApi()
+  const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    void fetchDashboardStats()
+  }, [fetchDashboardStats])
 
   const quickStats: VerifierQuickStat[] = useMemo(
     () => [
       {
-        id: "pending-verifications",
-        label: "Pending Verifications In Queue",
-        value: queueSubmissions.length,
-        icon: "briefcase",
-        iconTint: "bg-amber-100 text-amber-700",
-        helperText: "Awaiting verifier action",
+        id: 'pending-verifications',
+        label: 'Pending Verifications In Queue',
+        value: dashboardStats.pendingQueueCount,
+        icon: 'briefcase',
+        iconTint: 'bg-amber-100 text-amber-700',
+        helperText: 'Awaiting verifier action',
       },
       {
-        id: "verified-today",
-        label: "Total Verified Today",
-        value: 37,
-        icon: "team",
-        iconTint: "bg-emerald-100 text-emerald-700",
-        helperText: "Marked as fully verified",
+        id: 'verified-today',
+        label: 'Total Verified Today',
+        value: dashboardStats.verifiedTodayCount,
+        icon: 'team',
+        iconTint: 'bg-emerald-100 text-emerald-700',
+        helperText: 'Marked as fully verified',
       },
       {
-        id: "flagged-today",
-        label: "Total Flagged Today",
-        value: 9,
-        icon: "tool",
-        iconTint: "bg-rose-100 text-rose-700",
-        helperText: "Needs follow-up review",
+        id: 'flagged-today',
+        label: 'Flagged Or Unverifiable Today',
+        value: dashboardStats.flaggedTodayCount,
+        icon: 'tool',
+        iconTint: 'bg-rose-100 text-rose-700',
+        helperText: 'Needs follow-up review',
       },
     ],
-    [queueSubmissions.length],
-  );
+    [dashboardStats.flaggedTodayCount, dashboardStats.pendingQueueCount, dashboardStats.verifiedTodayCount],
+  )
 
   const totalQueueActionsToday = useMemo(
-    () => quickStats[1].value + quickStats[2].value,
-    [],
-  );
+    () => dashboardStats.verifiedTodayCount + dashboardStats.flaggedTodayCount,
+    [dashboardStats.flaggedTodayCount, dashboardStats.verifiedTodayCount],
+  )
 
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className="w-full bg-[#232429] text-white lg:min-h-screen lg:w-72">
           <div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
-              <span className="text-lg font-bold text-[var(--color-button)]">FG</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
+              <span className="text-lg font-bold text-(--color-button)">FG</span>
             </div>
             <div>
               <p className="text-sm font-semibold">FairGig</p>
@@ -77,7 +101,7 @@ const VerifierDashboardPage = () => {
                   className={classNames(
                     "group flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-[var(--color-button)] text-white shadow-[0_8px_20px_rgba(255,145,77,0.3)]"
+                      ? "bg-(--color-button) text-white shadow-[0_8px_20px_rgba(255,145,77,0.3)]"
                       : "text-white/80 hover:bg-white/10 hover:text-white",
                   )}
                 >
@@ -93,7 +117,7 @@ const VerifierDashboardPage = () => {
         </aside>
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
-          <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[var(--color-button)]/8 blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-(--color-button)/8 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-[#4a5d7d]/10 blur-3xl" />
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -112,11 +136,22 @@ const VerifierDashboardPage = () => {
                 </div>
                 <Button
                   variant="ghost"
+                  onClick={() => {
+                    clearError()
+                    void fetchDashboardStats()
+                  }}
+                  disabled={isDashboardLoading}
                   leftAdornment={<Icon name="clock" className="h-4 w-4" />}
                 >
-                  Refresh Queue
+                  {isDashboardLoading ? 'Refreshing...' : 'Refresh Queue'}
                 </Button>
               </div>
+
+              {error ? (
+                <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </p>
+              ) : null}
 
               <div className="grid gap-4 md:grid-cols-3">
                 {quickStats.map((stat) => (
@@ -155,7 +190,7 @@ const VerifierDashboardPage = () => {
                   </p>
                 </div>
                 <span className="rounded-full bg-[#eef2f7] px-3 py-1 text-xs font-medium text-[#425066]">
-                  Last sync: 5 minutes ago
+                  Last sync: {formatLastSynced(dashboardStats.lastSyncedAt)}
                 </span>
               </div>
             </section>
@@ -163,7 +198,7 @@ const VerifierDashboardPage = () => {
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default VerifierDashboardPage;
+export default VerifierDashboardPage

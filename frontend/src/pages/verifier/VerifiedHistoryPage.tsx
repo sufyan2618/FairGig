@@ -1,74 +1,91 @@
-import { useMemo, useState } from "react";
-import { Icon } from "../../components/common/Icon";
-import { LabeledSelectField } from "../../components/common/LabeledSelectField";
-import { LabeledTextField } from "../../components/common/LabeledTextField";
-import { TopHeader } from "../../components/layout/TopHeader";
-import { useVerifiedHistoryApi } from "../../hooks/api/useVerifiedHistoryApi";
-import { useVerifierSidebarNavigation } from "../../hooks/useVerifierSidebarNavigation";
-import type { VerificationDecisionOutcome } from "../../types/verifier";
-import { classNames } from "../../utils/functions";
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '../../components/common/Button'
+import { Icon } from '../../components/common/Icon'
+import { LabeledSelectField } from '../../components/common/LabeledSelectField'
+import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { useVerifierVerificationApi } from '../../hooks/api/useVerifierVerificationApi'
+import { useVerifierSidebarNavigation } from '../../hooks/useVerifierSidebarNavigation'
+import type { VerificationDecisionStatus } from '../../types/verifier'
+import { classNames } from '../../utils/functions'
 
 const outcomeOptions = [
-	{ label: "All Outcomes", value: "all" },
-	{ label: "Verified", value: "Verified" },
-	{ label: "Flagged", value: "Flagged" },
-];
+	{ label: 'All Outcomes', value: 'all' },
+	{ label: 'Verified', value: 'verified' },
+	{ label: 'Flagged', value: 'flagged' },
+	{ label: 'Unverifiable', value: 'unverifiable' },
+]
 
 const formatDateTime = (isoDateTime: string): string => {
-	const date = new Date(isoDateTime);
+	const date = new Date(isoDateTime)
 
-	return date.toLocaleString("en-US", {
-		month: "short",
-		day: "2-digit",
-		year: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-};
+	return date.toLocaleString('en-US', {
+		month: 'short',
+		day: '2-digit',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	})
+}
 
-const outcomeClassMap: Record<VerificationDecisionOutcome, string> = {
-	Verified: "bg-emerald-100 text-emerald-700",
-	Flagged: "bg-rose-100 text-rose-700",
-};
+const outcomeClassMap: Record<VerificationDecisionStatus, string> = {
+	verified: 'bg-emerald-100 text-emerald-700',
+	flagged: 'bg-rose-100 text-rose-700',
+	unverifiable: 'bg-slate-200 text-slate-700',
+}
+
+const formatOutcomeLabel = (outcome: VerificationDecisionStatus): string =>
+	outcome.charAt(0).toUpperCase() + outcome.slice(1)
 
 const VerifiedHistoryPage = () => {
 	const { sidebarItems, activeSidebarItem, onSidebarItemSelect } =
-		useVerifierSidebarNavigation();
-	const { data: historyRecords } = useVerifiedHistoryApi();
+		useVerifierSidebarNavigation()
+	const {
+		history,
+		historyPagination,
+		isHistoryLoading,
+		error,
+		fetchHistory,
+		clearError,
+	} = useVerifierVerificationApi()
 
-	const [searchQuery, setSearchQuery] = useState("");
-	const [startDate, setStartDate] = useState("");
-	const [endDate, setEndDate] = useState("");
-	const [outcomeFilter, setOutcomeFilter] = useState("all");
+	const [searchQuery, setSearchQuery] = useState('')
+	const [startDate, setStartDate] = useState('')
+	const [endDate, setEndDate] = useState('')
+	const [outcomeFilter, setOutcomeFilter] = useState('all')
+
+	useEffect(() => {
+		void fetchHistory({
+			page: 1,
+			limit: 100,
+			status:
+				outcomeFilter === 'all' ? undefined : (outcomeFilter as VerificationDecisionStatus),
+			dateFrom: startDate || undefined,
+			dateTo: endDate || undefined,
+		})
+	}, [endDate, fetchHistory, outcomeFilter, startDate])
 
 	const filteredRecords = useMemo(() => {
 		const normalizedSearch = searchQuery.trim().toLowerCase();
 
-		return historyRecords.filter((record) => {
+		return history.filter((record) => {
 			const matchesSearch =
 				normalizedSearch.length === 0 ||
-				`${record.workerDisplayId} ${record.platform} ${record.submissionId}`
+				`${record.workerDisplayName ?? ''} ${record.platform ?? ''} ${record.submissionId} ${record.decisionId}`
 					.toLowerCase()
-					.includes(normalizedSearch);
+					.includes(normalizedSearch)
 
-			const matchesOutcome =
-				outcomeFilter === "all" || record.outcome === outcomeFilter;
-
-			const reviewedDate = record.reviewedAt.slice(0, 10);
-			const matchesStartDate = !startDate || reviewedDate >= startDate;
-			const matchesEndDate = !endDate || reviewedDate <= endDate;
-
-			return matchesSearch && matchesOutcome && matchesStartDate && matchesEndDate;
-		});
-	}, [historyRecords, searchQuery, outcomeFilter, startDate, endDate]);
+			return matchesSearch
+		})
+	}, [history, searchQuery])
 
 	return (
 		<div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
 			<div className="flex min-h-screen flex-col lg:flex-row">
 				<aside className="w-full bg-[#232429] text-white lg:min-h-screen lg:w-72">
 					<div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
-						<div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
-							<span className="text-lg font-bold text-[var(--color-button)]">FG</span>
+						<div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
+							<span className="text-lg font-bold text-(--color-button)">FG</span>
 						</div>
 						<div>
 							<p className="text-sm font-semibold">FairGig</p>
@@ -88,7 +105,7 @@ const VerifiedHistoryPage = () => {
 									className={classNames(
 										"group flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200",
 										isActive
-											? "bg-[var(--color-button)] text-white shadow-[0_8px_20px_rgba(255,145,77,0.3)]"
+											? "bg-(--color-button) text-white shadow-[0_8px_20px_rgba(255,145,77,0.3)]"
 											: "text-white/80 hover:bg-white/10 hover:text-white",
 									)}
 								>
@@ -104,7 +121,7 @@ const VerifiedHistoryPage = () => {
 				</aside>
 
 				<main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
-					<div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[var(--color-button)]/8 blur-3xl" />
+					<div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-(--color-button)/8 blur-3xl" />
 					<div className="pointer-events-none absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-[#4a5d7d]/10 blur-3xl" />
 
 					<div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -119,9 +136,15 @@ const VerifiedHistoryPage = () => {
 									</p>
 								</div>
 								<span className="rounded-full bg-[#eef2f7] px-3 py-1 text-xs font-medium text-[#425066]">
-									Records: {filteredRecords.length}
+									Records: {historyPagination.total}
 								</span>
 							</div>
+
+							{error ? (
+								<p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+									{error}
+								</p>
+							) : null}
 
 							<div className="mb-4 grid gap-3 md:grid-cols-3">
 								<LabeledTextField
@@ -144,6 +167,29 @@ const VerifiedHistoryPage = () => {
 								/>
 							</div>
 
+							<div className="mb-3 flex justify-end">
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => {
+										clearError()
+										void fetchHistory({
+											page: 1,
+											limit: 100,
+											status:
+												outcomeFilter === 'all'
+													? undefined
+													: (outcomeFilter as VerificationDecisionStatus),
+											dateFrom: startDate || undefined,
+											dateTo: endDate || undefined,
+										})
+									}}
+									disabled={isHistoryLoading}
+								>
+									{isHistoryLoading ? 'Refreshing...' : 'Refresh'}
+								</Button>
+							</div>
+
 							<div className="overflow-x-auto">
 								<table className="min-w-full border-separate border-spacing-y-2 text-sm">
 									<thead>
@@ -158,11 +204,11 @@ const VerifiedHistoryPage = () => {
 									</thead>
 									<tbody>
 										{filteredRecords.map((record) => (
-											<tr key={record.id} className="rounded-xl bg-[#f8f9fb]">
+											<tr key={record.decisionId} className="rounded-xl bg-[#f8f9fb]">
 												<td className="rounded-l-xl px-3 py-3 font-medium text-[#1d1d1d]">{record.submissionId}</td>
-												<td className="px-3 py-3 text-[#3f4a5f]">{record.workerDisplayId}</td>
-												<td className="px-3 py-3 text-[#3f4a5f]">{record.platform}</td>
-												<td className="px-3 py-3 text-[#3f4a5f]">{record.shiftDate}</td>
+												<td className="px-3 py-3 text-[#3f4a5f]">{record.workerDisplayName ?? 'N/A'}</td>
+												<td className="px-3 py-3 text-[#3f4a5f]">{record.platform ?? 'N/A'}</td>
+												<td className="px-3 py-3 text-[#3f4a5f]">{record.shiftDate ?? 'N/A'}</td>
 												<td className="px-3 py-3">
 													<span
 														className={classNames(
@@ -170,7 +216,7 @@ const VerifiedHistoryPage = () => {
 															outcomeClassMap[record.outcome],
 														)}
 													>
-														{record.outcome}
+														{formatOutcomeLabel(record.outcome)}
 													</span>
 												</td>
 												<td className="rounded-r-xl px-3 py-3 text-[#3f4a5f]">
@@ -181,12 +227,18 @@ const VerifiedHistoryPage = () => {
 									</tbody>
 								</table>
 							</div>
+
+							{!isHistoryLoading && filteredRecords.length === 0 ? (
+								<p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
+									No verification history records match your current filters.
+								</p>
+							) : null}
 						</section>
 					</div>
 				</main>
 			</div>
 		</div>
-	);
-};
+	)
+}
 
-export default VerifiedHistoryPage;
+export default VerifiedHistoryPage
