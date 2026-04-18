@@ -1,0 +1,15 @@
+node_modules
+bun.lockb
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.git
+.gitignore
+.env
+.env.*
+README.md
+coverage
+dist
+.vscode
+.DS_Store
