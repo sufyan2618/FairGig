@@ -9,6 +9,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
     AuthWithUserResponse,
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     IntrospectResponse,
     LoginRequest,
@@ -18,6 +19,7 @@ from app.schemas.auth import (
     RegisterResponse,
     ResendEmailOtpRequest,
     ResetPasswordRequest,
+    UpdateProfileRequest,
     VerifyEmailOtpRequest,
 )
 from app.schemas.common import MessageResponse
@@ -127,6 +129,32 @@ async def reset_password(
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
     return UserResponse.model_validate(current_user)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    payload: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    auth_service = AuthService(db)
+    user = await auth_service.update_profile(user=current_user, full_name=payload.full_name)
+    return UserResponse.model_validate(user)
+
+
+@router.post("/change-password", response_model=MessageResponse)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    auth_service = AuthService(db)
+    await auth_service.change_password(
+        user=current_user,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+    )
+    return MessageResponse(message="Password updated successfully.")
 
 
 @router.get("/introspect", response_model=IntrospectResponse)

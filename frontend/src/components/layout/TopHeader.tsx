@@ -13,7 +13,7 @@ export const TopHeader = ({ searchQuery, onSearchQueryChange }: TopHeaderProps) 
     </div>
 
     <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
-      <div className="w-full min-w-[220px] sm:w-[280px]">
+      <div className="w-full min-w-55 sm:w-70">
         <LabeledTextField
           value={searchQuery}
           onChange={onSearchQueryChange}
@@ -31,7 +31,7 @@ export const TopHeader = ({ searchQuery, onSearchQueryChange }: TopHeaderProps) 
         <Icon name="bell" className="h-5 w-5" />
       </button>
 
-      <div className="h-11 w-11 overflow-hidden rounded-full border border-[#d9dde4] bg-gradient-to-br from-[#dfe8f9] to-[#f6ddd0]">
+      <div className="h-11 w-11 overflow-hidden rounded-full border border-[#d9dde4] bg-linear-to-br from-[#dfe8f9] to-[#f6ddd0]">
         <img
           src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
           alt="User"

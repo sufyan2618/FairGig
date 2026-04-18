@@ -2,9 +2,9 @@ export const clampNumber = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
 
 export const formatCurrency = (value: number): string =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat("en-PK", {
     style: "currency",
-    currency: "USD",
+    currency: "PKR",
     maximumFractionDigits: 0,
   }).format(value);
 

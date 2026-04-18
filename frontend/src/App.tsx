@@ -49,16 +49,22 @@ const RouteToast = () => {
 		}
 
 		if (state.toast.message === 'Please sign in first.' && isAuthenticated) {
-			navigate(location.pathname, { replace: true, state: {} })
+			navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
 			return
 		}
 
 		setToast(state.toast)
-		navigate(location.pathname, { replace: true, state: {} })
+		navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+	}, [isAuthenticated, location.hash, location.pathname, location.search, location.state, navigate])
+
+	useEffect(() => {
+		if (!toast) {
+			return
+		}
 
 		const timeout = window.setTimeout(() => setToast(null), 2800)
 		return () => window.clearTimeout(timeout)
-	}, [isAuthenticated, location, navigate])
+	}, [toast])
 
 	if (!toast) {
 		return null

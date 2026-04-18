@@ -1,244 +1,236 @@
-import { useMemo, useState } from "react";
-import { Button } from "../../components/common/Button";
-import { LabeledSelectField } from "../../components/common/LabeledSelectField";
-import { Sidebar } from "../../components/layout/Sidebar";
-import { TopHeader } from "../../components/layout/TopHeader";
-import { sidebarItems } from "../../data/dashboardData";
-import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
-import { classNames, formatCurrency, formatPercentage } from "../../utils/functions";
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '../../components/common/Button'
+import { LabeledSelectField } from '../../components/common/LabeledSelectField'
+import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { Sidebar } from '../../components/layout/Sidebar'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { sidebarItems } from '../../data/dashboardData'
+import { useWorkerAnalyticsApi } from '../../hooks/api/useWorkerAnalyticsApi'
+import { useWorkerEarningsApi } from '../../hooks/api/useWorkerEarningsApi'
+import { useWorkerProfileApi } from '../../hooks/api/useWorkerProfileApi'
+import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
+import { formatCurrency, formatPercentage } from '../../utils/functions'
+import type { WorkerShift } from '../../types/worker'
 
-type Timeframe = "weekly" | "monthly";
+type Timeframe = 'weekly' | 'monthly'
 
-interface EarningsPoint {
-  label: string;
-  earnings: number;
-  hours: number;
+interface TrendRow {
+  label: string
+  gross: number
+  net: number
+  hours: number
 }
-
-interface CommissionPoint {
-  label: string;
-  careem: number;
-  foodpanda: number;
-  bykea: number;
-}
-
-interface ComparisonPoint {
-  category: string;
-  worker: number;
-  median: number;
-}
-
-const weeklyData: EarningsPoint[] = [
-  { label: "Mon", earnings: 4200, hours: 7.5 },
-  { label: "Tue", earnings: 5100, hours: 8.5 },
-  { label: "Wed", earnings: 3900, hours: 7 },
-  { label: "Thu", earnings: 5600, hours: 9 },
-  { label: "Fri", earnings: 6200, hours: 9.5 },
-  { label: "Sat", earnings: 6900, hours: 10 },
-  { label: "Sun", earnings: 4700, hours: 7.5 },
-];
-
-const monthlyData: EarningsPoint[] = [
-  { label: "Nov", earnings: 98000, hours: 168 },
-  { label: "Dec", earnings: 105000, hours: 172 },
-  { label: "Jan", earnings: 101000, hours: 166 },
-  { label: "Feb", earnings: 112000, hours: 176 },
-  { label: "Mar", earnings: 118000, hours: 182 },
-  { label: "Apr", earnings: 123000, hours: 185 },
-];
-
-const commissionData: CommissionPoint[] = [
-  { label: "Nov", careem: 12, foodpanda: 15, bykea: 10 },
-  { label: "Dec", careem: 11, foodpanda: 14, bykea: 10 },
-  { label: "Jan", careem: 13, foodpanda: 15, bykea: 11 },
-  { label: "Feb", careem: 12, foodpanda: 16, bykea: 10 },
-  { label: "Mar", careem: 11, foodpanda: 14, bykea: 9 },
-  { label: "Apr", careem: 10, foodpanda: 13, bykea: 9 },
-];
-
-const comparisonData: ComparisonPoint[] = [
-  { category: "Ride Hailing", worker: 123000, median: 108500 },
-  { category: "Food Delivery", worker: 89700, median: 92300 },
-  { category: "Two-Wheeler", worker: 74400, median: 68100 },
-];
 
 const timeframeOptions = [
-  { label: "Weekly", value: "weekly" },
-  { label: "Monthly", value: "monthly" },
-];
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+]
 
-const getLineCoordinates = (values: number[], width: number, height: number, padding: number) => {
-  if (values.length === 0) {
-    return [] as Array<{ x: number; y: number }>;
+const toMonthLabel = (dateString: string): string => {
+  const parsed = new Date(`${dateString}T00:00:00Z`)
+  return `${parsed.getUTCFullYear()}-${String(parsed.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+const startOfDayUtc = (value: Date): Date =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
+
+const buildWeeklyTrend = (shifts: WorkerShift[]): TrendRow[] => {
+  const today = startOfDayUtc(new Date())
+  const start = new Date(today)
+  start.setUTCDate(start.getUTCDate() - 6)
+
+  const grouped = new Map<string, TrendRow>()
+
+  for (const shift of shifts) {
+    const shiftDate = new Date(`${shift.date}T00:00:00Z`)
+    if (shiftDate < start || shiftDate > today) {
+      continue
+    }
+
+    const label = shift.date
+    const existing = grouped.get(label)
+
+    if (existing) {
+      existing.gross += shift.gross_earned
+      existing.net += shift.net_received
+      existing.hours += shift.hours_worked
+    } else {
+      grouped.set(label, {
+        label,
+        gross: shift.gross_earned,
+        net: shift.net_received,
+        hours: shift.hours_worked,
+      })
+    }
   }
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const domain = max - min || 1;
-
-  return values.map((value, index) => {
-    const x = padding + (index * (width - padding * 2)) / Math.max(values.length - 1, 1);
-    const y = height - padding - ((value - min) / domain) * (height - padding * 2);
-    return { x, y };
-  });
-};
-
-const getLinePath = (points: Array<{ x: number; y: number }>) =>
-  points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x},${point.y}`).join(" ");
-
-interface AnalyticsCardProps {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
+  return [...grouped.values()].sort((first, second) => first.label.localeCompare(second.label))
 }
 
-const AnalyticsCard = ({ title, subtitle, children }: AnalyticsCardProps) => (
-  <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h3 className="text-lg font-semibold text-[#1d1d1d]">{title}</h3>
-        {subtitle ? <p className="mt-1 text-sm text-[#667085]">{subtitle}</p> : null}
-      </div>
-    </div>
-    {children}
-  </section>
-);
+const buildMonthlyTrend = (shifts: WorkerShift[]): TrendRow[] => {
+  const grouped = new Map<string, TrendRow>()
 
-interface SingleLineChartProps {
-  labels: string[];
-  values: number[];
-  colorClass: string;
+  for (const shift of shifts) {
+    const label = toMonthLabel(shift.date)
+    const existing = grouped.get(label)
+
+    if (existing) {
+      existing.gross += shift.gross_earned
+      existing.net += shift.net_received
+      existing.hours += shift.hours_worked
+    } else {
+      grouped.set(label, {
+        label,
+        gross: shift.gross_earned,
+        net: shift.net_received,
+        hours: shift.hours_worked,
+      })
+    }
+  }
+
+  return [...grouped.values()]
+    .sort((first, second) => first.label.localeCompare(second.label))
+    .slice(-6)
 }
-
-const SingleLineChart = ({ labels, values, colorClass }: SingleLineChartProps) => {
-  const width = 640;
-  const height = 220;
-  const padding = 24;
-  const points = getLineCoordinates(values, width, height, padding);
-
-  return (
-    <div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full rounded-xl bg-[#f8f9fb] p-2">
-        {[0, 1, 2, 3].map((guide) => {
-          const y = padding + (guide * (height - padding * 2)) / 3;
-          return (
-            <line
-              key={guide}
-              x1={padding}
-              x2={width - padding}
-              y1={y}
-              y2={y}
-              stroke="#dbe2ec"
-              strokeDasharray="4 4"
-            />
-          );
-        })}
-
-        <path d={getLinePath(points)} fill="none" className={classNames("stroke-3", colorClass)} />
-
-        {points.map((point, index) => (
-          <circle key={labels[index]} cx={point.x} cy={point.y} r="4" className={classNames("stroke-2", colorClass)} fill="white" />
-        ))}
-      </svg>
-
-      <div className="mt-3 grid gap-2 text-xs text-[#667085]" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}>
-        {labels.map((label) => (
-          <span key={label} className="text-center">
-            {label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const MultiSeriesLineChart = ({ data }: { data: CommissionPoint[] }) => {
-  const width = 640;
-  const height = 240;
-  const padding = 24;
-
-  const careemPoints = getLineCoordinates(
-    data.map((point) => point.careem),
-    width,
-    height,
-    padding,
-  );
-  const foodpandaPoints = getLineCoordinates(
-    data.map((point) => point.foodpanda),
-    width,
-    height,
-    padding,
-  );
-  const bykeaPoints = getLineCoordinates(
-    data.map((point) => point.bykea),
-    width,
-    height,
-    padding,
-  );
-
-  return (
-    <div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-60 w-full rounded-xl bg-[#f8f9fb] p-2">
-        {[0, 1, 2, 3].map((guide) => {
-          const y = padding + (guide * (height - padding * 2)) / 3;
-          return (
-            <line
-              key={guide}
-              x1={padding}
-              x2={width - padding}
-              y1={y}
-              y2={y}
-              stroke="#dbe2ec"
-              strokeDasharray="4 4"
-            />
-          );
-        })}
-
-        <path d={getLinePath(careemPoints)} fill="none" className="stroke-3 stroke-[#2f6fdf]" />
-        <path d={getLinePath(foodpandaPoints)} fill="none" className="stroke-3 stroke-[#ec6a37]" />
-        <path d={getLinePath(bykeaPoints)} fill="none" className="stroke-3 stroke-[#18a06b]" />
-      </svg>
-
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[#4b5565]">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#2f6fdf]" />Careem
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#ec6a37]" />foodpanda
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#18a06b]" />Bykea
-        </span>
-      </div>
-
-      <div className="mt-2 grid gap-2 text-xs text-[#667085]" style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}>
-        {data.map((point) => (
-          <span key={point.label} className="text-center">
-            {point.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const MyAnalyticsPage = () => {
-  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [timeframe, setTimeframe] = useState<Timeframe>("weekly");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [timeframe, setTimeframe] = useState<Timeframe>('weekly')
+  const [medianCategory, setMedianCategory] = useState('')
+  const [medianCityZone, setMedianCityZone] = useState('')
+  const [medianMonth, setMedianMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
+  })
+  const [localNotice, setLocalNotice] = useState<string | null>(null)
 
-  const trendData = timeframe === "weekly" ? weeklyData : monthlyData;
+  const {
+    shifts,
+    isLoading: isShiftsLoading,
+    error: shiftsError,
+    fetchShifts,
+  } = useWorkerEarningsApi()
 
-  const hourlyRateData = useMemo(
-    () => trendData.map((entry) => Number((entry.earnings / entry.hours).toFixed(1))),
-    [trendData],
-  );
+  const {
+    workerMedian,
+    isMedianLoading,
+    error: analyticsError,
+    fetchWorkerMedian,
+    clearError,
+  } = useWorkerAnalyticsApi()
 
-  const totalEarnings = trendData.reduce((sum, row) => sum + row.earnings, 0);
-  const avgHourlyRate = hourlyRateData.reduce((sum, value) => sum + value, 0) / Math.max(hourlyRateData.length, 1);
+  const { prefs } = useWorkerProfileApi()
 
-  const primaryComparison = comparisonData[0];
-  const delta = primaryComparison.worker - primaryComparison.median;
+  useEffect(() => {
+    void fetchShifts({ page: 1, limit: 200 })
+  }, [fetchShifts])
+
+  useEffect(() => {
+    if (prefs.primaryCategory && !medianCategory) {
+      setMedianCategory(prefs.primaryCategory)
+    }
+    if (prefs.city && !medianCityZone) {
+      setMedianCityZone(prefs.city)
+    }
+  }, [medianCategory, medianCityZone, prefs.city, prefs.primaryCategory])
+
+  useEffect(() => {
+    if (!medianCategory || !medianCityZone) {
+      return
+    }
+
+    void fetchWorkerMedian(medianCategory, medianCityZone, medianMonth)
+  }, [fetchWorkerMedian, medianCategory, medianCityZone, medianMonth])
+
+  const trendData = useMemo(
+    () => (timeframe === 'weekly' ? buildWeeklyTrend(shifts) : buildMonthlyTrend(shifts)),
+    [shifts, timeframe],
+  )
+
+  const overallTotals = useMemo(() => {
+    const gross = shifts.reduce((sum, shift) => sum + shift.gross_earned, 0)
+    const net = shifts.reduce((sum, shift) => sum + shift.net_received, 0)
+    const hours = shifts.reduce((sum, shift) => sum + shift.hours_worked, 0)
+
+    return {
+      gross,
+      net,
+      hours,
+      hourlyRate: hours > 0 ? net / hours : 0,
+      verifiedCount: shifts.filter((shift) => shift.verification_status === 'verified').length,
+    }
+  }, [shifts])
+
+  const medianComparison = useMemo(() => {
+    if (!workerMedian || workerMedian.median_net_earned_pkr === null) {
+      return null
+    }
+
+    const selectedMonthNet = shifts
+      .filter((shift) => toMonthLabel(shift.date) === medianMonth)
+      .reduce((sum, shift) => sum + shift.net_received, 0)
+
+    return {
+      selectedMonthNet,
+      cityMedian: workerMedian.median_net_earned_pkr,
+      delta: selectedMonthNet - workerMedian.median_net_earned_pkr,
+    }
+  }, [medianMonth, shifts, workerMedian])
+
+  const commissionByPlatform = useMemo(() => {
+    const grouped = new Map<string, { gross: number; deductions: number; shifts: number }>()
+
+    for (const shift of shifts) {
+      if (shift.verification_status !== 'verified') {
+        continue
+      }
+
+      const existing = grouped.get(shift.platform)
+      if (existing) {
+        existing.gross += shift.gross_earned
+        existing.deductions += shift.deductions
+        existing.shifts += 1
+      } else {
+        grouped.set(shift.platform, {
+          gross: shift.gross_earned,
+          deductions: shift.deductions,
+          shifts: 1,
+        })
+      }
+    }
+
+    return [...grouped.entries()].map(([platform, value]) => ({
+      platform,
+      shifts: value.shifts,
+      commissionRate: value.gross > 0 ? (value.deductions / value.gross) * 100 : 0,
+      gross: value.gross,
+      deductions: value.deductions,
+    }))
+  }, [shifts])
+
+  const refreshAll = async () => {
+    setLocalNotice(null)
+    clearError()
+
+    await fetchShifts({ page: 1, limit: 200 })
+
+    if (medianCategory && medianCityZone) {
+      await fetchWorkerMedian(medianCategory, medianCityZone, medianMonth)
+    }
+  }
+
+  const loadMedian = async () => {
+    setLocalNotice(null)
+    clearError()
+
+    if (!medianCategory || !medianCityZone) {
+      setLocalNotice('Category and city zone are required for median comparison.')
+      return
+    }
+
+    await fetchWorkerMedian(medianCategory, medianCityZone, medianMonth)
+  }
 
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
@@ -256,135 +248,201 @@ const MyAnalyticsPage = () => {
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
 
-            <section className="animate-fade-up grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <section className="animate-fade-up grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <article className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)]">
-                <p className="text-sm text-[#666f7f]">{timeframe === "weekly" ? "Weekly Earnings" : "Monthly Earnings"}</p>
-                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{formatCurrency(totalEarnings)}</p>
+                <p className="text-sm text-[#666f7f]">Total Net Earnings</p>
+                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{formatCurrency(overallTotals.net)}</p>
               </article>
 
               <article className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)]">
-                <p className="text-sm text-[#666f7f]">Average Effective Hourly Rate</p>
-                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{formatCurrency(avgHourlyRate)}</p>
+                <p className="text-sm text-[#666f7f]">Total Gross Earnings</p>
+                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{formatCurrency(overallTotals.gross)}</p>
               </article>
 
-              <article className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)] sm:col-span-2 xl:col-span-1">
-                <p className="text-sm text-[#666f7f]">Vs City Median ({primaryComparison.category})</p>
-                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{delta >= 0 ? "+" : ""}{formatCurrency(delta)}</p>
+              <article className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)]">
+                <p className="text-sm text-[#666f7f]">Effective Hourly Rate</p>
+                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{formatCurrency(overallTotals.hourlyRate)}</p>
+              </article>
+
+              <article className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)]">
+                <p className="text-sm text-[#666f7f]">Verified Shifts</p>
+                <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{overallTotals.verifiedCount}</p>
               </article>
             </section>
 
-            <AnalyticsCard
-              title="Earnings Trend"
-              subtitle="Weekly/Monthly earnings trend line chart"
-            >
+            {(shiftsError || analyticsError || localNotice) ? (
+              <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
+                {shiftsError ? (
+                  <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{shiftsError}</p>
+                ) : null}
+                {analyticsError ? (
+                  <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{analyticsError}</p>
+                ) : null}
+                {localNotice ? (
+                  <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">{localNotice}</p>
+                ) : null}
+              </section>
+            ) : null}
+
+            <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <LabeledSelectField
-                  label="Timeframe"
-                  options={timeframeOptions}
-                  value={timeframe}
-                  onChange={(value) => setTimeframe(value as Timeframe)}
-                  containerClassName="w-full sm:w-40"
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1d1d1d]">Earnings Trend</h3>
+                  <p className="mt-1 text-sm text-[#667085]">Aggregated from real shift records.</p>
+                </div>
+
+                <div className="flex flex-wrap items-end gap-2">
+                  <LabeledSelectField
+                    label="Timeframe"
+                    options={timeframeOptions}
+                    value={timeframe}
+                    onChange={(value) => setTimeframe(value as Timeframe)}
+                    containerClassName="w-full sm:w-40"
+                  />
+                  <Button variant="ghost" onClick={() => void refreshAll()} disabled={isShiftsLoading || isMedianLoading}>
+                    {isShiftsLoading || isMedianLoading ? 'Refreshing...' : 'Refresh'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-separate border-spacing-y-2 text-sm">
+                  <thead>
+                    <tr className="text-left text-[#657083]">
+                      <th className="px-3 py-2 font-medium">Period</th>
+                      <th className="px-3 py-2 font-medium">Gross</th>
+                      <th className="px-3 py-2 font-medium">Net</th>
+                      <th className="px-3 py-2 font-medium">Hours</th>
+                      <th className="px-3 py-2 font-medium">Hourly Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trendData.map((item) => (
+                      <tr key={item.label} className="rounded-xl bg-[#f8f9fb]">
+                        <td className="rounded-l-xl px-3 py-3 font-medium text-[#1d1d1d]">{item.label}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{formatCurrency(item.gross)}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{formatCurrency(item.net)}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{item.hours.toFixed(1)}</td>
+                        <td className="rounded-r-xl px-3 py-3 font-medium text-[#1d1d1d]">
+                          {formatCurrency(item.hours > 0 ? item.net / item.hours : 0)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {!isShiftsLoading && trendData.length === 0 ? (
+                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
+                  Not enough shift data yet to plot trend rows.
+                </p>
+              ) : null}
+            </section>
+
+            <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
+              <h3 className="mb-4 text-lg font-semibold text-[#1d1d1d]">Platform Commission Rate Tracker</h3>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-separate border-spacing-y-2 text-sm">
+                  <thead>
+                    <tr className="text-left text-[#657083]">
+                      <th className="px-3 py-2 font-medium">Platform</th>
+                      <th className="px-3 py-2 font-medium">Verified Shifts</th>
+                      <th className="px-3 py-2 font-medium">Gross</th>
+                      <th className="px-3 py-2 font-medium">Deductions</th>
+                      <th className="px-3 py-2 font-medium">Commission Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {commissionByPlatform.map((item) => (
+                      <tr key={item.platform} className="rounded-xl bg-[#f8f9fb]">
+                        <td className="rounded-l-xl px-3 py-3 font-medium text-[#1d1d1d]">{item.platform}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{item.shifts}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{formatCurrency(item.gross)}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{formatCurrency(item.deductions)}</td>
+                        <td className="rounded-r-xl px-3 py-3 font-medium text-[#1d1d1d]">
+                          {formatPercentage(item.commissionRate)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {commissionByPlatform.length === 0 ? (
+                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
+                  No verified shifts available yet for commission analytics.
+                </p>
+              ) : null}
+            </section>
+
+            <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
+              <h3 className="mb-4 text-lg font-semibold text-[#1d1d1d]">City-wide Median Comparison</h3>
+
+              <div className="grid gap-3 md:grid-cols-4">
+                <LabeledTextField
+                  label="Category"
+                  value={medianCategory}
+                  onChange={setMedianCategory}
+                  placeholder="e.g. ride_hailing"
                 />
-                <Button size="sm" variant="ghost">Export CSV</Button>
-              </div>
-
-              <SingleLineChart
-                labels={trendData.map((point) => point.label)}
-                values={trendData.map((point) => point.earnings)}
-                colorClass="stroke-[#ec6a37]"
-              />
-            </AnalyticsCard>
-
-            <AnalyticsCard
-              title="Effective Hourly Rate"
-              subtitle="How much you effectively earn per hour over time"
-            >
-              <SingleLineChart
-                labels={trendData.map((point) => point.label)}
-                values={hourlyRateData}
-                colorClass="stroke-[#2f6fdf]"
-              />
-            </AnalyticsCard>
-
-            <AnalyticsCard
-              title="Platform Commission Rate Tracker"
-              subtitle="How much each platform deducted over time"
-            >
-              <MultiSeriesLineChart data={commissionData} />
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3">
-                  <p className="text-xs text-[#667085]">Careem Avg</p>
-                  <p className="mt-1 text-lg font-semibold text-[#1d1d1d]">
-                    {formatPercentage(
-                      commissionData.reduce((sum, point) => sum + point.careem, 0) / commissionData.length,
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3">
-                  <p className="text-xs text-[#667085]">foodpanda Avg</p>
-                  <p className="mt-1 text-lg font-semibold text-[#1d1d1d]">
-                    {formatPercentage(
-                      commissionData.reduce((sum, point) => sum + point.foodpanda, 0) / commissionData.length,
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3">
-                  <p className="text-xs text-[#667085]">Bykea Avg</p>
-                  <p className="mt-1 text-lg font-semibold text-[#1d1d1d]">
-                    {formatPercentage(
-                      commissionData.reduce((sum, point) => sum + point.bykea, 0) / commissionData.length,
-                    )}
-                  </p>
+                <LabeledTextField
+                  label="City Zone"
+                  value={medianCityZone}
+                  onChange={setMedianCityZone}
+                  placeholder="e.g. Lahore"
+                />
+                <LabeledTextField
+                  label="Month"
+                  type="month"
+                  value={medianMonth}
+                  onChange={setMedianMonth}
+                />
+                <div className="flex items-end">
+                  <Button onClick={() => void loadMedian()} disabled={isMedianLoading}>
+                    {isMedianLoading ? 'Loading...' : 'Load Median'}
+                  </Button>
                 </div>
               </div>
-            </AnalyticsCard>
 
-            <AnalyticsCard
-              title="City-wide Anonymized Median Comparison"
-              subtitle={`You earned ${formatCurrency(primaryComparison.worker)}, median in your category is ${formatCurrency(primaryComparison.median)}.`}
-            >
-              <div className="space-y-4">
-                {comparisonData.map((point) => {
-                  const peak = Math.max(point.worker, point.median);
-                  const workerWidth = (point.worker / peak) * 100;
-                  const medianWidth = (point.median / peak) * 100;
+              {workerMedian ? (
+                <div className="mt-4 rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-4">
+                  <p className="text-sm text-[#475467]">
+                    Cohort Size: <span className="font-semibold text-[#1d1d1d]">{workerMedian.cohort_size}</span>
+                  </p>
 
-                  return (
-                    <div key={point.category} className="rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-4">
-                      <p className="mb-3 text-sm font-semibold text-[#344054]">{point.category}</p>
-
-                      <div className="space-y-2">
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-xs text-[#667085]">
-                            <span>You</span>
-                            <span>{formatCurrency(point.worker)}</span>
-                          </div>
-                          <div className="h-2.5 rounded-full bg-[#e1e7f2]">
-                            <div className="h-2.5 rounded-full bg-[#2f6fdf]" style={{ width: `${workerWidth}%` }} />
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-xs text-[#667085]">
-                            <span>Median</span>
-                            <span>{formatCurrency(point.median)}</span>
-                          </div>
-                          <div className="h-2.5 rounded-full bg-[#fde3d5]">
-                            <div className="h-2.5 rounded-full bg-[#ec6a37]" style={{ width: `${medianWidth}%` }} />
-                          </div>
-                        </div>
+                  {workerMedian.suppressed ? (
+                    <p className="mt-2 text-sm text-[#b54708]">{workerMedian.message}</p>
+                  ) : (
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                      <div>
+                        <p className="text-xs text-[#667085]">Your Net ({medianMonth})</p>
+                        <p className="text-lg font-semibold text-[#1d1d1d]">
+                          {formatCurrency(medianComparison?.selectedMonthNet ?? 0)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#667085]">City Median</p>
+                        <p className="text-lg font-semibold text-[#1d1d1d]">
+                          {formatCurrency(workerMedian.median_net_earned_pkr ?? 0)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#667085]">Difference</p>
+                        <p className="text-lg font-semibold text-[#1d1d1d]">
+                          {formatCurrency(medianComparison?.delta ?? 0)}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </AnalyticsCard>
+                  )}
+                </div>
+              ) : null}
+            </section>
           </div>
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default MyAnalyticsPage;
+export default MyAnalyticsPage

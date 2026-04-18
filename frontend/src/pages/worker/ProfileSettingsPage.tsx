@@ -1,103 +1,145 @@
-import { useState, type FormEvent } from "react";
-import { Button } from "../../components/common/Button";
-import { LabeledSelectField } from "../../components/common/LabeledSelectField";
-import { LabeledTextField } from "../../components/common/LabeledTextField";
-import { Sidebar } from "../../components/layout/Sidebar";
-import { TopHeader } from "../../components/layout/TopHeader";
-import { sidebarItems } from "../../data/dashboardData";
-import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
-import { classNames } from "../../utils/functions";
+import { useEffect, useState, type FormEvent } from 'react'
+import { Button } from '../../components/common/Button'
+import { LabeledSelectField } from '../../components/common/LabeledSelectField'
+import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { Sidebar } from '../../components/layout/Sidebar'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { sidebarItems } from '../../data/dashboardData'
+import { useWorkerProfileApi } from '../../hooks/api/useWorkerProfileApi'
+import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
+import { classNames } from '../../utils/functions'
 
 const cityOptions = [
-  { label: "Select city", value: "" },
-  { label: "Karachi", value: "Karachi" },
-  { label: "Lahore", value: "Lahore" },
-  { label: "Islamabad", value: "Islamabad" },
-  { label: "Rawalpindi", value: "Rawalpindi" },
-  { label: "Peshawar", value: "Peshawar" },
-  { label: "Quetta", value: "Quetta" },
-  { label: "Other", value: "Other" },
-];
+  { label: 'Select city', value: '' },
+  { label: 'Karachi', value: 'Karachi' },
+  { label: 'Lahore', value: 'Lahore' },
+  { label: 'Islamabad', value: 'Islamabad' },
+  { label: 'Rawalpindi', value: 'Rawalpindi' },
+  { label: 'Peshawar', value: 'Peshawar' },
+  { label: 'Quetta', value: 'Quetta' },
+  { label: 'Other', value: 'Other' },
+]
 
 const platformCategoryOptions = [
-  { label: "Select primary category", value: "" },
-  { label: "Food Delivery", value: "Food Delivery" },
-  { label: "Ride Hailing", value: "Ride Hailing" },
-  { label: "Courier / Parcel", value: "Courier / Parcel" },
-  { label: "Grocery Delivery", value: "Grocery Delivery" },
-  { label: "Multi-Platform", value: "Multi-Platform" },
-];
-
-interface NotificationPrefs {
-  appNotifications: boolean;
-  smsAlerts: boolean;
-  payoutUpdates: boolean;
-  grievanceUpdates: boolean;
-}
+  { label: 'Select primary category', value: '' },
+  { label: 'ride_hailing', value: 'ride_hailing' },
+  { label: 'food_delivery', value: 'food_delivery' },
+  { label: 'courier', value: 'courier' },
+  { label: 'grocery_delivery', value: 'grocery_delivery' },
+  { label: 'multi_platform', value: 'multi_platform' },
+  { label: 'other', value: 'other' },
+]
 
 const ProfileSettingsPage = () => {
-  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
-  const [searchQuery, setSearchQuery] = useState("");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation()
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const [name, setName] = useState("Ali Raza");
-  const [city, setCity] = useState("Karachi");
-  const [primaryCategory, setPrimaryCategory] = useState("Ride Hailing");
+  const {
+    profile,
+    prefs,
+    isLoading,
+    isSaving,
+    error,
+    notice,
+    fetchProfile,
+    saveAccountDetails,
+    changePassword,
+    saveNotificationPrefs,
+    clearError,
+    clearNotice,
+  } = useWorkerProfileApi()
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState('')
+  const [city, setCity] = useState('')
+  const [primaryCategory, setPrimaryCategory] = useState('')
 
-  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
-    appNotifications: true,
-    smsAlerts: false,
-    payoutUpdates: true,
-    grievanceUpdates: true,
-  });
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
-  const [notice, setNotice] = useState("");
+  useEffect(() => {
+    void fetchProfile()
+  }, [fetchProfile])
 
-  const updateNotification = (key: keyof NotificationPrefs) => {
-    setNotificationPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  useEffect(() => {
+    if (profile?.full_name) {
+      setName(profile.full_name)
+    }
+  }, [profile?.full_name])
 
-  const handleAccountSave = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  useEffect(() => {
+    setCity(prefs.city)
+    setPrimaryCategory(prefs.primaryCategory)
+  }, [prefs.city, prefs.primaryCategory])
 
-    if (!name.trim() || !city || !primaryCategory) {
-      setNotice("Please complete all account details before saving.");
-      return;
+  useEffect(() => {
+    if (!notice) {
+      return
     }
 
-    setNotice("Account details saved successfully.");
-  };
+    const timeout = window.setTimeout(() => clearNotice(), 2800)
+    return () => window.clearTimeout(timeout)
+  }, [clearNotice, notice])
 
-  const handlePasswordUpdate = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const updateNotification = (key: keyof typeof prefs.notifications) => {
+    saveNotificationPrefs({
+      ...prefs.notifications,
+      [key]: !prefs.notifications[key],
+    })
+  }
+
+  const handleAccountSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    clearError()
+    clearNotice()
+
+    if (!name.trim()) {
+      return
+    }
+
+    try {
+      await saveAccountDetails({
+        full_name: name.trim(),
+        city,
+        primaryCategory,
+      })
+    } catch {
+      return
+    }
+  }
+
+  const handlePasswordUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    clearError()
+    clearNotice()
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setNotice("Please fill all password fields.");
-      return;
+      return
     }
 
     if (newPassword.length < 8) {
-      setNotice("New password should be at least 8 characters.");
-      return;
+      return
     }
 
     if (newPassword !== confirmPassword) {
-      setNotice("New password and confirm password do not match.");
-      return;
+      return
     }
 
-    setNotice("Password updated successfully.");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  };
+    try {
+      await changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      })
 
-  const handleNotificationSave = () => {
-    setNotice("Notification preferences updated.");
-  };
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch {
+      return
+    }
+  }
 
   const ToggleSwitch = ({
     label,
@@ -105,10 +147,10 @@ const ProfileSettingsPage = () => {
     checked,
     onToggle,
   }: {
-    label: string;
-    description: string;
-    checked: boolean;
-    onToggle: () => void;
+    label: string
+    description: string
+    checked: boolean
+    onToggle: () => void
   }) => (
     <div className="flex items-start justify-between gap-3 rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3 sm:items-center sm:gap-4">
       <div className="min-w-0">
@@ -120,21 +162,21 @@ const ProfileSettingsPage = () => {
         type="button"
         onClick={onToggle}
         className={classNames(
-          "relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-colors sm:mt-0",
-          checked ? "bg-[#1f2024]" : "bg-[#d3d7df]",
+          'relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-colors sm:mt-0',
+          checked ? 'bg-[#1f2024]' : 'bg-[#d3d7df]',
         )}
         aria-pressed={checked}
         aria-label={label}
       >
         <span
           className={classNames(
-            "h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
-            checked ? "translate-x-5" : "translate-x-0",
+            'h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200',
+            checked ? 'translate-x-5' : 'translate-x-0',
           )}
         />
       </button>
     </div>
-  );
+  )
 
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
@@ -156,9 +198,21 @@ const ProfileSettingsPage = () => {
               <div className="mb-5">
                 <h2 className="text-2xl font-semibold text-[#1d1d1d]">My Profile / Settings</h2>
                 <p className="mt-1 text-sm text-[#667085]">
-                  Manage your account details, password, and notification preferences.
+                  Manage account details through APIs and save local worker preferences for analytics and notifications.
                 </p>
               </div>
+
+              {error ? (
+                <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </p>
+              ) : null}
+
+              {notice ? (
+                <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {notice}
+                </p>
+              ) : null}
 
               <div className="grid gap-5 xl:grid-cols-2">
                 <form onSubmit={handleAccountSave} className="rounded-2xl border border-[#e3e7ef] bg-[#f8f9fb] p-4">
@@ -172,24 +226,33 @@ const ProfileSettingsPage = () => {
                       placeholder="Enter your full name"
                       required
                     />
+
+                    <LabeledTextField
+                      label="Email"
+                      value={profile?.email ?? ''}
+                      onChange={() => {}}
+                      disabled
+                    />
+
                     <LabeledSelectField
                       label="City"
                       options={cityOptions}
                       value={city}
                       onChange={setCity}
-                      required
                     />
+
                     <LabeledSelectField
                       label="Primary Platform Category"
                       options={platformCategoryOptions}
                       value={primaryCategory}
                       onChange={setPrimaryCategory}
-                      required
                     />
                   </div>
 
                   <div className="mt-4">
-                    <Button type="submit">Save Account Details</Button>
+                    <Button type="submit" disabled={isSaving || isLoading}>
+                      {isSaving ? 'Saving...' : 'Save Account Details'}
+                    </Button>
                   </div>
                 </form>
 
@@ -205,6 +268,7 @@ const ProfileSettingsPage = () => {
                       placeholder="Current password"
                       required
                     />
+
                     <LabeledTextField
                       label="New Password"
                       value={newPassword}
@@ -213,6 +277,7 @@ const ProfileSettingsPage = () => {
                       placeholder="At least 8 characters"
                       required
                     />
+
                     <LabeledTextField
                       label="Confirm New Password"
                       value={confirmPassword}
@@ -224,7 +289,9 @@ const ProfileSettingsPage = () => {
                   </div>
 
                   <div className="mt-4">
-                    <Button type="submit">Update Password</Button>
+                    <Button type="submit" disabled={isSaving || isLoading}>
+                      {isSaving ? 'Updating...' : 'Update Password'}
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -236,47 +303,45 @@ const ProfileSettingsPage = () => {
                   <ToggleSwitch
                     label="App Notifications"
                     description="Receive important updates inside the app"
-                    checked={notificationPrefs.appNotifications}
-                    onToggle={() => updateNotification("appNotifications")}
+                    checked={prefs.notifications.appNotifications}
+                    onToggle={() => updateNotification('appNotifications')}
                   />
                   <ToggleSwitch
                     label="SMS Alerts"
                     description="Get urgent account and security alerts via SMS"
-                    checked={notificationPrefs.smsAlerts}
-                    onToggle={() => updateNotification("smsAlerts")}
+                    checked={prefs.notifications.smsAlerts}
+                    onToggle={() => updateNotification('smsAlerts')}
                   />
                   <ToggleSwitch
                     label="Payout Updates"
                     description="Be notified when weekly payouts are processed"
-                    checked={notificationPrefs.payoutUpdates}
-                    onToggle={() => updateNotification("payoutUpdates")}
+                    checked={prefs.notifications.payoutUpdates}
+                    onToggle={() => updateNotification('payoutUpdates')}
                   />
                   <ToggleSwitch
                     label="Grievance Updates"
                     description="Get status updates for your grievance posts"
-                    checked={notificationPrefs.grievanceUpdates}
-                    onToggle={() => updateNotification("grievanceUpdates")}
+                    checked={prefs.notifications.grievanceUpdates}
+                    onToggle={() => updateNotification('grievanceUpdates')}
                   />
                 </div>
 
                 <div className="mt-4">
-                  <Button type="button" onClick={handleNotificationSave}>
+                  <Button
+                    type="button"
+                    onClick={() => saveNotificationPrefs(prefs.notifications)}
+                    disabled={isLoading}
+                  >
                     Save Preferences
                   </Button>
                 </div>
               </div>
-
-              {notice ? (
-                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
-                  {notice}
-                </p>
-              ) : null}
             </section>
           </div>
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProfileSettingsPage;
+export default ProfileSettingsPage

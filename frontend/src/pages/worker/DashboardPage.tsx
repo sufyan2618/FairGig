@@ -1,62 +1,135 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "../../components/common/Button";
-import { Icon } from "../../components/common/Icon";
-import { LabeledSelectField } from "../../components/common/LabeledSelectField";
-import { Sidebar } from "../../components/layout/Sidebar";
-import { TopHeader } from "../../components/layout/TopHeader";
-import {
-  projectFilterOptions,
-  sidebarItems,
-  statusFilterOptions,
-} from "../../data/dashboardData";
-import { useActiveAssignmentsApi } from "../../hooks/api/useActiveAssignmentsApi";
-import { useDashboardStatsApi } from "../../hooks/api/useDashboardStatsApi";
-import { useShiftLogsApi } from "../../hooks/api/useShiftLogsApi";
-import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
-import { classNames, formatHours, formatPercentage } from "../../utils/functions";
-import {
-  filterShiftLogs,
-  getAssignmentStatusClass,
-  getProgressRingStyle,
-  getShiftStatusClass,
-  type ShiftFilterValue,
-} from "../../utils/dashboard/dashboard.utils";
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '../../components/common/Button'
+import { Icon } from '../../components/common/Icon'
+import { Sidebar } from '../../components/layout/Sidebar'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { sidebarItems } from '../../data/dashboardData'
+import { useWorkerEarningsApi } from '../../hooks/api/useWorkerEarningsApi'
+import { useWorkerGrievanceApi } from '../../hooks/api/useWorkerGrievanceApi'
+import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
+import { classNames, formatCurrency, formatHours } from '../../utils/functions'
 
-const avatarTones = [
-  "bg-blue-100 text-blue-600",
-  "bg-green-100 text-green-600",
-  "bg-purple-100 text-purple-600",
-];
+const cardStyles = [
+  'bg-blue-100 text-blue-600',
+  'bg-amber-100 text-amber-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-rose-100 text-rose-700',
+] as const
 
 const DashboardPage = () => {
-  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [projectFilter, setProjectFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<ShiftFilterValue>("all");
+  const navigate = useNavigate()
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation()
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: dashboardStats } = useDashboardStatsApi();
-  const { data: assignments } = useActiveAssignmentsApi();
-  const { data: shiftLogs } = useShiftLogsApi();
-  const [shiftLogRows, setShiftLogRows] = useState(shiftLogs);
+  const {
+    shifts,
+    pagination,
+    isLoading: isShiftsLoading,
+    error: shiftsError,
+    fetchShifts,
+  } = useWorkerEarningsApi()
+
+  const {
+    complaints,
+    error: complaintsError,
+    fetchComplaints,
+  } = useWorkerGrievanceApi()
 
   useEffect(() => {
-    setShiftLogRows(shiftLogs);
-  }, [shiftLogs]);
+    void fetchShifts({ page: 1, limit: 50 })
+    void fetchComplaints({ page: 1, limit: 20 })
+  }, [fetchComplaints, fetchShifts])
 
-  const handleToggleAction = (shiftLogId: string) => {
-    setShiftLogRows((previousRows) =>
-      previousRows.map((row) =>
-        row.id === shiftLogId
-          ? { ...row, isActionEnabled: !row.isActionEnabled }
-          : row,
-      ),
-    );
-  };
+  const now = new Date()
+  const currentMonthLabel = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
 
-  const filteredShiftLogs = useMemo(
-    () => filterShiftLogs(shiftLogRows, searchQuery, statusFilter, projectFilter),
-    [shiftLogRows, searchQuery, statusFilter, projectFilter],
-  );
+  const verifiedThisMonth = useMemo(
+    () =>
+      shifts
+        .filter(
+          (shift) =>
+            shift.verification_status === 'verified' && shift.date.startsWith(currentMonthLabel),
+        )
+        .reduce((sum, shift) => sum + shift.net_received, 0),
+    [currentMonthLabel, shifts],
+  )
+
+  const pendingReviewCount = useMemo(
+    () =>
+      shifts.filter(
+        (shift) =>
+          shift.verification_status === 'pending' || shift.verification_status === 'pending_review',
+      ).length,
+    [shifts],
+  )
+
+  const openGrievancesCount = useMemo(
+    () => complaints.filter((complaint) => complaint.escalation_status === 'open').length,
+    [complaints],
+  )
+
+  const filteredRecentShifts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    const sorted = [...shifts].sort(
+      (first, second) =>
+        new Date(second.submitted_at).getTime() - new Date(first.submitted_at).getTime(),
+    )
+
+    if (!q) {
+      return sorted.slice(0, 8)
+    }
+
+    return sorted
+      .filter(
+        (shift) =>
+          shift.platform.toLowerCase().includes(q) ||
+          shift.date.includes(q) ||
+          shift.verification_status.toLowerCase().includes(q),
+      )
+      .slice(0, 8)
+  }, [searchQuery, shifts])
+
+  const statusBadgeClass = (status: string): string => {
+    if (status === 'verified') {
+      return 'bg-emerald-100 text-emerald-700'
+    }
+
+    if (status === 'flagged' || status === 'unverifiable') {
+      return 'bg-rose-100 text-rose-700'
+    }
+
+    return 'bg-amber-100 text-amber-700'
+  }
+
+  const dashboardCards = [
+    {
+      id: 'total-shifts',
+      label: 'Total Shifts',
+      value: String(pagination.total || shifts.length),
+      icon: 'briefcase' as const,
+    },
+    {
+      id: 'pending-review',
+      label: 'Pending Review',
+      value: String(pendingReviewCount),
+      icon: 'clock' as const,
+    },
+    {
+      id: 'verified-earnings',
+      label: 'Verified This Month',
+      value: formatCurrency(verifiedThisMonth),
+      icon: 'wallet' as const,
+    },
+    {
+      id: 'open-grievances',
+      label: 'Open Grievances',
+      value: String(openGrievancesCount),
+      icon: 'message' as const,
+    },
+  ]
+
+  const hasError = shiftsError || complaintsError
 
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
@@ -68,7 +141,7 @@ const DashboardPage = () => {
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
-          <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[var(--color-button)]/8 blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-(--color-button)/8 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-[#4a5d7d]/10 blur-3xl" />
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -78,26 +151,26 @@ const DashboardPage = () => {
             />
 
             <section className="animate-fade-up grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {dashboardStats.map((stat, index) => (
+              {dashboardCards.map((card, index) => (
                 <article
-                  key={stat.id}
+                  key={card.id}
                   className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)]"
                   style={{ animationDelay: `${index * 70}ms` }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm text-[#666f7f]">{stat.label}</p>
+                      <p className="text-sm text-[#666f7f]">{card.label}</p>
                       <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">
-                        {stat.value}
+                        {card.value}
                       </p>
                     </div>
                     <span
                       className={classNames(
-                        "grid h-10 w-10 place-items-center rounded-xl",
-                        stat.iconTint,
+                        'grid h-10 w-10 place-items-center rounded-xl',
+                        cardStyles[index % cardStyles.length],
                       )}
                     >
-                      <Icon name={stat.icon} className="h-5 w-5" />
+                      <Icon name={card.icon} className="h-5 w-5" />
                     </span>
                   </div>
                 </article>
@@ -106,183 +179,81 @@ const DashboardPage = () => {
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-[#f7f8fa] p-4 md:p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold text-[#1d1d1d]">
-                  Active Projects
-                </h2>
-                <Button leftAdornment={<span className="text-lg leading-none">+</span>}>
-                  New Project
-                </Button>
-              </div>
-
-              <div className="grid gap-4 xl:grid-cols-3">
-                {assignments.map((assignment) => (
-                  <article
-                    key={assignment.id}
-                    className="rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_6px_18px_rgba(16,24,40,0.04)]"
-                  >
-                    <div className="mb-4 flex items-start justify-between gap-2">
-                      <h3 className="text-base font-semibold text-[#1d1d1d]">
-                        {assignment.title}
-                      </h3>
-                      <span
-                        className={classNames(
-                          "rounded-full px-2.5 py-1 text-xs font-medium",
-                          getAssignmentStatusClass(assignment.status),
-                        )}
-                      >
-                        {assignment.status}
-                      </span>
-                    </div>
-
-                    <div className="mb-5 flex justify-center">
-                      <div
-                        className="relative h-20 w-20 rounded-full p-[3px]"
-                        style={getProgressRingStyle(assignment.completion)}
-                      >
-                        <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-lg font-bold text-[var(--color-button)]">
-                          {formatPercentage(assignment.completion)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-[#768093]">Budget</p>
-                        <p className="font-semibold text-[#1d1d1d]">
-                          {assignment.budget}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[#768093]">Timeline</p>
-                        <p className="font-semibold text-[#1d1d1d]">
-                          {assignment.timeline}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#333f57] hover:text-[#1d1d1d]"
-                    >
-                      Expand Details
-                      <span className="text-xs">v</span>
-                    </button>
-                  </article>
-                ))}
+                <h2 className="text-xl font-semibold text-[#1d1d1d]">Quick Actions</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button onClick={() => navigate('/dashboard/log-shift')}>
+                    Log New Shift
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/dashboard/upload-screenshot')}>
+                    Upload Screenshot
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/dashboard/income-certificate')}>
+                    Generate Certificate
+                  </Button>
+                </div>
               </div>
             </section>
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold text-[#1d1d1d]">
-                  Time Management
-                </h2>
-                <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
-                  <LabeledSelectField
-                    label="Project"
-                    options={projectFilterOptions}
-                    value={projectFilter}
-                    onChange={setProjectFilter}
-                    containerClassName="w-full sm:w-52"
-                  />
-                  <LabeledSelectField
-                    label="Status"
-                    options={statusFilterOptions}
-                    value={statusFilter}
-                    onChange={(value) => setStatusFilter(value as ShiftFilterValue)}
-                    containerClassName="w-full sm:w-40"
-                  />
-                  <Button size="md">Export PDF</Button>
-                </div>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold text-[#1d1d1d]">Recent Shift Activity</h2>
+                <Button
+                  variant="ghost"
+                  onClick={() => void fetchShifts({ page: 1, limit: 50 })}
+                  disabled={isShiftsLoading}
+                >
+                  {isShiftsLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
               </div>
+
+              {hasError ? (
+                <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {shiftsError || complaintsError}
+                </p>
+              ) : null}
 
               <div className="overflow-x-auto">
                 <table className="min-w-full border-separate border-spacing-y-2 text-sm">
                   <thead>
                     <tr className="text-left text-[#657083]">
-                      <th className="px-3 py-2 font-medium">Employee</th>
-                      <th className="px-3 py-2 font-medium">Project</th>
                       <th className="px-3 py-2 font-medium">Date</th>
+                      <th className="px-3 py-2 font-medium">Platform</th>
                       <th className="px-3 py-2 font-medium">Hours</th>
+                      <th className="px-3 py-2 font-medium">Gross</th>
+                      <th className="px-3 py-2 font-medium">Net</th>
                       <th className="px-3 py-2 font-medium">Status</th>
-                      <th className="px-3 py-2 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredShiftLogs.map((log, index) => (
-                      <tr key={log.id} className="rounded-xl bg-[#f8f9fb]">
-                        <td className="rounded-l-xl px-3 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <span
-                              className={classNames(
-                                "grid h-7 w-7 place-items-center rounded-full text-xs font-semibold",
-                                avatarTones[index % avatarTones.length],
-                              )}
-                            >
-                              {log.memberInitials}
-                            </span>
-                            <span className="font-medium text-[#1d1d1d]">
-                              {log.memberName}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 text-[#3f4a5f]">{log.assignment}</td>
-                        <td className="px-3 py-3 text-[#3f4a5f]">{log.date}</td>
-                        <td className="px-3 py-3 font-medium text-[#1d1d1d]">
-                          {formatHours(log.hours)}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className={classNames(
-                              "rounded-full px-2.5 py-1 text-xs font-medium",
-                              getShiftStatusClass(log.status),
-                            )}
-                          >
-                            {log.status}
+                    {filteredRecentShifts.map((shift) => (
+                      <tr key={shift.id} className="rounded-xl bg-[#f8f9fb]">
+                        <td className="rounded-l-xl px-3 py-3 font-medium text-[#1d1d1d]">{shift.date}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{shift.platform}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{formatHours(shift.hours_worked)}</td>
+                        <td className="px-3 py-3 text-[#3f4a5f]">{formatCurrency(shift.gross_earned)}</td>
+                        <td className="px-3 py-3 font-medium text-[#1d1d1d]">{formatCurrency(shift.net_received)}</td>
+                        <td className="rounded-r-xl px-3 py-3">
+                          <span className={classNames('rounded-full px-2.5 py-1 text-xs font-medium', statusBadgeClass(shift.verification_status))}>
+                            {shift.verification_status}
                           </span>
-                        </td>
-                        <td className="rounded-r-xl px-3 py-3 min-w-[132px]">
-                          <div className="flex items-center gap-2 sm:gap-3 whitespace-nowrap">
-                            <button
-                              type="button"
-                              className="shrink-0 text-sm font-medium text-[#496ab3] hover:text-[#1d1d1d]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleAction(log.id)}
-                              className={classNames(
-                                "relative inline-flex h-6 w-11 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-colors",
-                                log.isActionEnabled
-                                  ? "bg-[#1f2024]"
-                                  : "bg-[#d3d7df]",
-                              )}
-                              aria-pressed={log.isActionEnabled}
-                              aria-label="Toggle action"
-                            >
-                              <span
-                                className={classNames(
-                                  "h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
-                                  log.isActionEnabled
-                                    ? "translate-x-5"
-                                    : "translate-x-0",
-                                )}
-                              />
-                            </button>
-                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+
+              {!isShiftsLoading && filteredRecentShifts.length === 0 ? (
+                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
+                  No shifts found for your current search.
+                </p>
+              ) : null}
             </section>
           </div>
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DashboardPage;
+export default DashboardPage

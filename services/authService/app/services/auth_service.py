@@ -258,6 +258,33 @@ class AuthService:
         )
         await self.db.commit()
 
+    async def update_profile(self, *, user: User, full_name: str) -> User:
+        user.full_name = full_name.strip()
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def change_password(self, *, user: User, current_password: str, new_password: str) -> None:
+        if not verify_password(current_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect.",
+            )
+
+        if current_password == new_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password must be different from current password.",
+            )
+
+        user.password_hash = hash_password(new_password)
+        await self.db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=datetime.now(UTC))
+        )
+        await self.db.commit()
+
     async def _issue_tokens(self, user: User) -> TokenResponse:
         access_token, _access_expires_at, _access_jti = create_access_token(
             user_id=str(user.id),
