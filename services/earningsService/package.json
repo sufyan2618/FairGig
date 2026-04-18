@@ -1,0 +1,37 @@
+{
+  "name": "backend",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch --env=.env src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts",
+    "generate:migrations": "npx drizzle-kit generate",
+    "apply:migrations": "npx drizzle-kit migrate",
+    "generate:types": "drizzle-kit generate:types --config ./drizzle.config.ts --out ./src/lib/db-types.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/multer": "^2.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "pg": "^8.20.0"
+  }
+}
