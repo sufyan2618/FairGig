@@ -5,7 +5,7 @@ import { LabeledTextField } from "../../components/common/LabeledTextField";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { TopHeader } from "../../components/layout/TopHeader";
 import { sidebarItems } from "../../data/dashboardData";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 
 interface ShiftFormData {
   platform: string;
@@ -81,7 +81,7 @@ const parseCsvLine = (line: string): string[] => {
 };
 
 const LogShiftPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItemId>("log-shift");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<ShiftFormData>(initialFormData);
   const [importRows, setImportRows] = useState<ShiftRow[]>([]);
@@ -193,7 +193,7 @@ const LogShiftPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">

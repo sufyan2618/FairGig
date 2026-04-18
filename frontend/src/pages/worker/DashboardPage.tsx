@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/common/Button";
 import { Icon } from "../../components/common/Icon";
 import { LabeledSelectField } from "../../components/common/LabeledSelectField";
@@ -12,7 +12,7 @@ import {
 import { useActiveAssignmentsApi } from "../../hooks/api/useActiveAssignmentsApi";
 import { useDashboardStatsApi } from "../../hooks/api/useDashboardStatsApi";
 import { useShiftLogsApi } from "../../hooks/api/useShiftLogsApi";
-import type { SidebarItemId } from "../../types/dashboard";
+import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
 import { classNames, formatHours, formatPercentage } from "../../utils/functions";
 import {
   filterShiftLogs,
@@ -29,8 +29,7 @@ const avatarTones = [
 ];
 
 const DashboardPage = () => {
-  const [activeSidebarItem, setActiveSidebarItem] =
-    useState<SidebarItemId>("log-shift");
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<ShiftFilterValue>("all");
@@ -38,10 +37,25 @@ const DashboardPage = () => {
   const { data: dashboardStats } = useDashboardStatsApi();
   const { data: assignments } = useActiveAssignmentsApi();
   const { data: shiftLogs } = useShiftLogsApi();
+  const [shiftLogRows, setShiftLogRows] = useState(shiftLogs);
+
+  useEffect(() => {
+    setShiftLogRows(shiftLogs);
+  }, [shiftLogs]);
+
+  const handleToggleAction = (shiftLogId: string) => {
+    setShiftLogRows((previousRows) =>
+      previousRows.map((row) =>
+        row.id === shiftLogId
+          ? { ...row, isActionEnabled: !row.isActionEnabled }
+          : row,
+      ),
+    );
+  };
 
   const filteredShiftLogs = useMemo(
-    () => filterShiftLogs(shiftLogs, searchQuery, statusFilter, projectFilter),
-    [shiftLogs, searchQuery, statusFilter, projectFilter],
+    () => filterShiftLogs(shiftLogRows, searchQuery, statusFilter, projectFilter),
+    [shiftLogRows, searchQuery, statusFilter, projectFilter],
   );
 
   return (
@@ -50,7 +64,7 @@ const DashboardPage = () => {
         <Sidebar
           items={sidebarItems}
           activeItemId={activeSidebarItem}
-          onItemSelect={setActiveSidebarItem}
+          onItemSelect={onSidebarItemSelect}
         />
 
         <main className="relative flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
@@ -237,20 +251,22 @@ const DashboardPage = () => {
                             </button>
                             <button
                               type="button"
+                              onClick={() => handleToggleAction(log.id)}
                               className={classNames(
-                                "relative h-6 w-11 rounded-full transition-colors",
+                                "relative inline-flex h-6 w-11 items-center overflow-hidden rounded-full p-0.5 transition-colors",
                                 log.isActionEnabled
                                   ? "bg-[#1f2024]"
                                   : "bg-[#d3d7df]",
                               )}
+                              aria-pressed={log.isActionEnabled}
                               aria-label="Toggle action"
                             >
                               <span
                                 className={classNames(
-                                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                                  "h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
                                   log.isActionEnabled
-                                    ? "translate-x-[1.35rem]"
-                                    : "translate-x-0.5",
+                                    ? "translate-x-5"
+                                    : "translate-x-0",
                                 )}
                               />
                             </button>
