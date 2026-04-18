@@ -1,34 +1,50 @@
-import express from 'express'
-import cors from 'cors'
-const app = express()
-import type { Request, Response } from 'express'
-import { Router } from 'express'
+import path from 'node:path';
 
-import { db } from './lib/db.js'
-import productRouter from './routers/productRouter.js'
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import express, { Router } from 'express';
+import type { Request, Response } from 'express';
 
-import cookieParser from 'cookie-parser'
+import { env } from './config/env.js';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
+import internalRouter from './routers/internalRouter.js';
+import shiftRouter from './routers/shiftRouter.js';
+import verificationRouter from './routers/verificationRouter.js';
 
-// Enable CORS for frontend
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-}))
+const app = express();
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(cookieParser())
+app.use(
+    cors({
+        origin: env.frontendUrl,
+        credentials: true,
+    }),
+);
 
-const router = Router()
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-router.get("/health", (req: Request, res: Response) => {
-    res.status(200).send("Health point. The server is running correctly")
-})
+app.use('/uploads', express.static(path.resolve(env.uploadsDir)));
 
-app.use('/api', router)
-app.use('/api', productRouter)
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server is running on port ${process.env.PORT || 3000}`);
+const router = Router();
+
+router.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({
+        status: 'healthy',
+        service: 'earnings-service',
+    });
+});
+
+app.use('/api', router);
+app.use('/api/earnings', shiftRouter);
+app.use('/api/earnings', verificationRouter);
+app.use('/api/earnings', internalRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+app.listen(env.port, () => {
+    console.log(`Earnings service is running on port ${env.port}`);
 });
 
 
