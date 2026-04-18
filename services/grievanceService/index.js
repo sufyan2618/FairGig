@@ -1,39 +1,46 @@
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
-import { ENV } from './src/util/dotenv.js';
-import { connectDB } from './src/lib/db.js';
-import authRoutes from './src/routers/authRouter.js';
+import cors from "cors";
+import express from "express";
+
+import { env } from "./src/config/env.js";
+import { connectDB, getDbHealth } from "./src/lib/db.js";
+import { errorHandler, notFoundHandler } from "./src/middlewares/errorHandler.js";
+import grievanceRoutes from "./src/routes/grievanceRoutes.js";
 
 const app = express();
-const PORT = ENV.PORT || 5000;
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
-app.use(cors(
-    { 
-        origin: ENV.CLIENT_URL, 
+app.use(express.json({ limit: "1mb" }));
+app.use(
+    cors({
+        origin: env.corsOrigins,
         credentials: true,
-        optionsSuccessStatus: 200,
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-    }
-));
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+    })
+);
 
-// Routes
-app.use('/api/auth', authRoutes);
-
-
-// Health Check Endpoint
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'OK', message: 'Server is healthy' });
-});
-
-
-// Start the server
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
+app.get("/api/grievances/health", (_req, res) => {
+    res.status(200).json({
+        status: "ok",
+        service: "grievance-service",
+        db: getDbHealth(),
     });
 });
+
+app.use("/api/grievances", grievanceRoutes);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+const bootstrap = async () => {
+    try {
+        await connectDB();
+        app.listen(env.port, () => {
+            console.log(`Grievance service is running on port ${env.port}`);
+        });
+    } catch (error) {
+        console.error("Failed to bootstrap grievance service", error);
+        process.exit(1);
+    }
+};
+
+bootstrap();
