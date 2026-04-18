@@ -1,29 +1,56 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import create_engine
+from __future__ import annotations
+
+from typing import Any
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import DeclarativeBase
+
 from app.core.config import settings
 
-DATABASE_URL = settings.DATABASE_URL
 
-# Async engine + session for FastAPI routes
-async_engine = create_async_engine(DATABASE_URL, echo=False)
-AsyncSessionLocal = async_sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
+class AnalyticsBase(DeclarativeBase):
+    pass
+
+
+ANALYTICS_SYNC_DATABASE_URL = settings.DATABASE_URL.replace("+asyncpg", "+psycopg2")
+EARNINGS_SYNC_DATABASE_URL = settings.EARNINGS_DATABASE_URL.replace("+asyncpg", "+psycopg2")
+
+analytics_engine = create_engine(
+    ANALYTICS_SYNC_DATABASE_URL,
+    pool_pre_ping=True,
+    future=True,
 )
 
-# Sync engine + session for Celery workers (they run in separate processes)
-SYNC_DATABASE_URL = DATABASE_URL.replace("+asyncpg", "+psycopg2")
-sync_engine = create_engine(SYNC_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+earnings_engine = create_engine(
+    EARNINGS_SYNC_DATABASE_URL,
+    pool_pre_ping=True,
+    future=True,
+)
 
-Base = declarative_base()
+
+def db_health() -> str:
+    try:
+        with analytics_engine.connect() as analytics_connection:
+            analytics_connection.execute(text("SELECT 1"))
+
+        with earnings_engine.connect() as earnings_connection:
+            earnings_connection.execute(text("SELECT 1"))
+
+        return "connected"
+    except Exception:
+        return "disconnected"
 
 
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+def fetch_all(query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    with earnings_engine.connect() as connection:
+        result = connection.execute(text(query), params or {})
+        return [dict(row._mapping) for row in result]
+
+
+def fetch_one(query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    with earnings_engine.connect() as connection:
+        result = connection.execute(text(query), params or {})
+        row = result.first()
+        if not row:
+            return None
+        return dict(row._mapping)

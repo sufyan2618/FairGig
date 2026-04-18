@@ -1,28 +1,35 @@
+import { validationResult } from "express-validator";
 
-export const validate = (schema) => {
-  return (req, res, next) => {
-    // Validate request body
-    const { error } = schema.validate(req.body, {
-      abortEarly: false, // Return all errors
-      stripUnknown: true, // Remove unknown fields
-      allowUnknown: true // Allow unknown fields in the request
-    });
+import { raise } from "../utils/httpError.js";
 
-    if (error) {
-      // Format validation errors
-      const errors = error.details.map(err => ({
-        field: err.path.join('.'),
-        message: err.message
-      }));
+export const validateJoi = (schema, source = "body") => (req, _res, next) => {
+  const target = req[source] ?? {};
+  const { error, value } = schema.validate(target, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
 
-      return res.status(400).json({
-        status: 'error',
-        message: 'Validation failed',
-        errors
-      });
-    }
+  if (error) {
+    raise(
+      422,
+      "VALIDATION_ERROR",
+      "Request validation failed.",
+      error.details.map((item) => ({
+        message: item.message,
+        path: item.path.join("."),
+      }))
+    );
+  }
 
-    // If validation passes, proceed to next middleware
-    next();
-  };
-}; 
+  req[source] = value;
+  return next();
+};
+
+export const validateRequest = (req, _res, next) => {
+  const result = validationResult(req);
+  if (result.isEmpty()) {
+    return next();
+  }
+
+  raise(422, "VALIDATION_ERROR", "Request validation failed.", result.array());
+};

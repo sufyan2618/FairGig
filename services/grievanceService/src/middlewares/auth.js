@@ -1,30 +1,53 @@
-import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
-import { ENV } from "../util/dotenv.js";
 
-export const authMiddleware = async (req, res, next) => {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+import { ALLOWED_ROLES } from "../config/constants.js";
+import { env } from "../config/env.js";
+import { raise } from "../utils/httpError.js";
+
+export const requireAuth = () => (req, _res, next) => {
+    const authorization = req.header("Authorization");
+    if (!authorization || !authorization.startsWith("Bearer ")) {
+        raise(401, "UNAUTHORIZED", "Missing or invalid Bearer token.");
+    }
+
+    const token = authorization.slice(7).trim();
     if (!token) {
-        return res.status(401).json({ success: false, message: "No token provided" });
+        raise(401, "UNAUTHORIZED", "Missing Bearer token value.");
     }
+
+    let decoded;
     try {
-        const decoded = jwt.verify(token, ENV.JWT_SECRET);
-        const user = await User.findById(decoded.id);
-        if (!user) {
-            return res.status(401).json({ success: false, message: "Invalid token" });
-        }
-        req.user = user;
-        next();
-    } catch (error) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
+        decoded = jwt.verify(token, env.jwtSecret);
+    } catch (_error) {
+        raise(401, "UNAUTHORIZED", "Invalid or expired token.");
     }
+
+    const userId = decoded.sub ?? decoded.user_id ?? decoded.id;
+    const role = decoded.role;
+
+    if (!userId || typeof userId !== "string") {
+        raise(401, "UNAUTHORIZED", "Token subject is missing.");
+    }
+
+    if (!role || typeof role !== "string" || !ALLOWED_ROLES.includes(role)) {
+        raise(403, "FORBIDDEN", "Token role is invalid.");
+    }
+
+    if (decoded.type && decoded.type !== "access") {
+        raise(401, "UNAUTHORIZED", "Only access tokens are allowed.");
+    }
+
+    req.auth = {
+        userId,
+        role,
+    };
+
+    return next();
 };
 
-export const authorizeRoles = (...roles) => {
-    return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden: You don't have enough privileges" });
-        }
-        next();
-    };
+export const requireRoles = (...allowedRoles) => (req, _res, next) => {
+    if (!req.auth || !allowedRoles.includes(req.auth.role)) {
+        raise(403, "FORBIDDEN", "You are not allowed to perform this action.");
+    }
+    return next();
 };
