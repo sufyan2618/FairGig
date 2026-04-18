@@ -27,22 +27,50 @@ export const getHttpStatus = (error: unknown): number | null => {
 }
 
 export const extractApiErrorMessage = (error: unknown, fallbackMessage = 'Something went wrong. Please try again.'): string => {
-	if (!axios.isAxiosError<ApiErrorBody>(error)) {
+	if (!axios.isAxiosError<ApiErrorBody | string>(error)) {
 		return fallbackMessage
 	}
 
 	const errorData = error.response?.data
 
-	if (typeof errorData?.detail === 'string' && errorData.detail.trim()) {
-		return errorData.detail
+	if (typeof errorData === 'string' && errorData.trim()) {
+		const text = errorData.trim()
+
+		try {
+			const parsed = JSON.parse(text) as ApiErrorBody
+
+			if (typeof parsed?.detail === 'string' && parsed.detail.trim()) {
+				return parsed.detail
+			}
+
+			if (typeof parsed?.message === 'string' && parsed.message.trim()) {
+				return parsed.message
+			}
+
+			if (typeof parsed?.error === 'string' && parsed.error.trim()) {
+				return parsed.error
+			}
+		} catch {
+			// Non-JSON text response; return raw message.
+		}
+
+		return text
 	}
 
-	if (typeof errorData?.message === 'string' && errorData.message.trim()) {
-		return errorData.message
-	}
+	if (errorData && typeof errorData === 'object') {
+		const body = errorData as ApiErrorBody
 
-	if (typeof errorData?.error === 'string' && errorData.error.trim()) {
-		return errorData.error
+		if (typeof body.detail === 'string' && body.detail.trim()) {
+			return body.detail
+		}
+
+		if (typeof body.message === 'string' && body.message.trim()) {
+			return body.message
+		}
+
+		if (typeof body.error === 'string' && body.error.trim()) {
+			return body.error
+		}
 	}
 
 	if (typeof error.message === 'string' && error.message.trim()) {

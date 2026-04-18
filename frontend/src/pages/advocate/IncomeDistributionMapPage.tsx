@@ -1,129 +1,58 @@
-import { useMemo, useState } from "react";
-import { LabeledSelectField } from "../../components/common/LabeledSelectField";
-import { Sidebar } from "../../components/layout/Sidebar";
-import { TopHeader } from "../../components/layout/TopHeader";
-import {
-  advocateCityOptions,
-  advocatePlatformOptions,
-  advocateSidebarItems,
-} from "../../data/advocateData";
-import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
-import { classNames, formatCurrency } from "../../utils/functions";
-
-type PlatformName = "Bykea" | "Careem" | "foodpanda";
-type CityName = "Karachi" | "Lahore" | "Islamabad";
-
-interface ZoneIncomeRow {
-  city: CityName;
-  zone: string;
-  platform: PlatformName;
-  averageNetEarning: number;
-  workerCount: number;
-}
-
-const zoneIncomeRows: ZoneIncomeRow[] = [
-  { city: "Karachi", zone: "DHA", platform: "Careem", averageNetEarning: 4100, workerCount: 248 },
-  { city: "Karachi", zone: "DHA", platform: "Bykea", averageNetEarning: 3320, workerCount: 174 },
-  { city: "Karachi", zone: "DHA", platform: "foodpanda", averageNetEarning: 2890, workerCount: 198 },
-  { city: "Karachi", zone: "Gulshan-e-Iqbal", platform: "Careem", averageNetEarning: 3610, workerCount: 215 },
-  { city: "Karachi", zone: "Gulshan-e-Iqbal", platform: "Bykea", averageNetEarning: 2810, workerCount: 168 },
-  { city: "Karachi", zone: "Gulshan-e-Iqbal", platform: "foodpanda", averageNetEarning: 2420, workerCount: 173 },
-
-  { city: "Lahore", zone: "Johar Town", platform: "Careem", averageNetEarning: 3820, workerCount: 206 },
-  { city: "Lahore", zone: "Johar Town", platform: "Bykea", averageNetEarning: 2960, workerCount: 181 },
-  { city: "Lahore", zone: "Johar Town", platform: "foodpanda", averageNetEarning: 2510, workerCount: 194 },
-  { city: "Lahore", zone: "Gulberg", platform: "Careem", averageNetEarning: 3990, workerCount: 229 },
-  { city: "Lahore", zone: "Gulberg", platform: "Bykea", averageNetEarning: 3180, workerCount: 187 },
-  { city: "Lahore", zone: "Gulberg", platform: "foodpanda", averageNetEarning: 2730, workerCount: 214 },
-
-  { city: "Islamabad", zone: "F-10", platform: "Careem", averageNetEarning: 4350, workerCount: 121 },
-  { city: "Islamabad", zone: "F-10", platform: "Bykea", averageNetEarning: 3410, workerCount: 108 },
-  { city: "Islamabad", zone: "F-10", platform: "foodpanda", averageNetEarning: 2970, workerCount: 132 },
-  { city: "Islamabad", zone: "G-11", platform: "Careem", averageNetEarning: 3540, workerCount: 137 },
-  { city: "Islamabad", zone: "G-11", platform: "Bykea", averageNetEarning: 2760, workerCount: 112 },
-  { city: "Islamabad", zone: "G-11", platform: "foodpanda", averageNetEarning: 2360, workerCount: 125 },
-];
-
-interface ZoneAggregate {
-  city: CityName;
-  zone: string;
-  averageNetEarning: number;
-  workerCount: number;
-}
+import { useEffect, useMemo, useState } from 'react'
+import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { Sidebar } from '../../components/layout/Sidebar'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { advocateSidebarItems } from '../../data/advocateData'
+import { useAdvocateAnalyticsApi } from '../../hooks/api/useAdvocateAnalyticsApi'
+import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
+import { classNames, formatCurrency } from '../../utils/functions'
 
 const IncomeDistributionMapPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState("all");
-  const [selectedCity, setSelectedCity] = useState("all");
-  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation()
 
-  const filteredRows = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+  const {
+    incomeDistribution,
+    isIncomeLoading,
+    error,
+    fetchIncomeDistribution,
+    clearError,
+  } = useAdvocateAnalyticsApi()
 
-    return zoneIncomeRows.filter((row) => {
-      const matchesPlatform =
-        selectedPlatform === "all" || row.platform === selectedPlatform;
-      const matchesCity = selectedCity === "all" || row.city === selectedCity;
-      const matchesSearch =
-        !query ||
-        row.zone.toLowerCase().includes(query) ||
-        row.city.toLowerCase().includes(query) ||
-        row.platform.toLowerCase().includes(query);
+  useEffect(() => {
+    void fetchIncomeDistribution({
+      month: selectedMonth || undefined,
+      category: selectedCategory || undefined,
+    })
+  }, [fetchIncomeDistribution, selectedCategory, selectedMonth])
 
-      return matchesPlatform && matchesCity && matchesSearch;
-    });
-  }, [searchQuery, selectedPlatform, selectedCity]);
+  const zoneAggregates = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    const zones = incomeDistribution?.zones ?? []
 
-  const zoneAggregates = useMemo<ZoneAggregate[]>(() => {
-    const grouped = new Map<string, ZoneAggregate>();
+    if (!query) {
+      return zones
+    }
 
-    filteredRows.forEach((row) => {
-      const key = `${row.city}::${row.zone}`;
-      const existing = grouped.get(key);
+    return zones.filter((zone) => zone.city_zone.toLowerCase().includes(query))
+  }, [incomeDistribution?.zones, searchQuery])
 
-      if (!existing) {
-        grouped.set(key, {
-          city: row.city,
-          zone: row.zone,
-          averageNetEarning: row.averageNetEarning,
-          workerCount: row.workerCount,
-        });
-        return;
-      }
-
-      const mergedWorkers = existing.workerCount + row.workerCount;
-      const weightedAverage =
-        (existing.averageNetEarning * existing.workerCount +
-          row.averageNetEarning * row.workerCount) /
-        mergedWorkers;
-
-      grouped.set(key, {
-        city: row.city,
-        zone: row.zone,
-        averageNetEarning: Number(weightedAverage.toFixed(0)),
-        workerCount: mergedWorkers,
-      });
-    });
-
-    return Array.from(grouped.values()).sort(
-      (first, second) => second.averageNetEarning - first.averageNetEarning,
-    );
-  }, [filteredRows]);
+  const numericMedians = zoneAggregates
+    .map((zone) => zone.median_net_pkr)
+    .filter((median): median is number => typeof median === 'number')
 
   const cityAverage =
-    zoneAggregates.reduce((sum, zone) => sum + zone.averageNetEarning, 0) /
-    Math.max(zoneAggregates.length, 1);
+    numericMedians.reduce((sum, value) => sum + value, 0) / Math.max(numericMedians.length, 1)
 
-  const highestEarning = Math.max(
-    ...zoneAggregates.map((zone) => zone.averageNetEarning),
-    1,
-  );
+  const highestEarning = Math.max(...numericMedians, 1)
 
   const lowIncomeZones = zoneAggregates.filter(
-    (zone) => zone.averageNetEarning < cityAverage * 0.82,
-  );
+    (zone) => typeof zone.median_net_pkr === 'number' && zone.median_net_pkr < cityAverage * 0.82,
+  )
 
-  const topLowIncomeZone = lowIncomeZones[0];
+  const topLowIncomeZone = lowIncomeZones[0]
 
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
@@ -144,45 +73,62 @@ const IncomeDistributionMapPage = () => {
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
               <h2 className="text-2xl font-semibold text-[#1d1d1d]">Income Distribution Map</h2>
               <p className="mt-1 text-sm text-[#667085]">
-                City-zone breakdown of worker earnings to identify under-earning areas that may be systematically exploited.
+                City-zone distribution of worker income with privacy-aware suppression where cohorts are small.
               </p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <LabeledSelectField
-                  label="Platform"
-                  options={advocatePlatformOptions}
-                  value={selectedPlatform}
-                  onChange={setSelectedPlatform}
+                <LabeledTextField
+                  label="Month"
+                  value={selectedMonth}
+                  onChange={setSelectedMonth}
+                  type="month"
                 />
-                <LabeledSelectField
-                  label="City"
-                  options={advocateCityOptions}
-                  value={selectedCity}
-                  onChange={setSelectedCity}
+                <LabeledTextField
+                  label="Worker Category"
+                  value={selectedCategory}
+                  onChange={setSelectedCategory}
+                  placeholder="e.g. ride_hailing"
                 />
               </div>
+
+              {error ? (
+                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </p>
+              ) : null}
             </section>
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
-              <h3 className="text-lg font-semibold text-[#1d1d1d]">Zone Earning Distribution (Chart)</h3>
+              <h3 className="text-lg font-semibold text-[#1d1d1d]">Zone Earning Distribution (Median Net)</h3>
               <p className="mt-1 text-sm text-[#667085]">
-                Lower bars indicate zones with weaker income outcomes for workers.
+                Lower bars indicate zones with weaker median income outcomes.
               </p>
+
+              {isIncomeLoading ? (
+                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
+                  Loading income distribution data...
+                </p>
+              ) : null}
 
               <div className="mt-5 space-y-3">
                 {zoneAggregates.map((zone) => {
-                  const widthPercent = (zone.averageNetEarning / highestEarning) * 100;
-                  const isAtRisk = zone.averageNetEarning < cityAverage * 0.82;
+                  const median = zone.median_net_pkr ?? 0
+                  const widthPercent = (median / highestEarning) * 100
+                  const isAtRisk = typeof zone.median_net_pkr === 'number' && zone.median_net_pkr < cityAverage * 0.82
 
                   return (
                     <article
-                      key={`${zone.city}-${zone.zone}`}
+                      key={zone.city_zone}
                       className="rounded-xl border border-[#e3e7ef] bg-[#f8f9fb] p-3"
                     >
                       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-[#1d1d1d]">{zone.zone}</span>
-                          <span className="text-[#667085]">{zone.city}</span>
+                          <span className="font-medium text-[#1d1d1d]">{zone.city_zone}</span>
+                          {zone.suppressed ? (
+                            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
+                              Suppressed
+                            </span>
+                          ) : null}
                           {isAtRisk ? (
                             <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
                               Low Income Zone
@@ -190,20 +136,20 @@ const IncomeDistributionMapPage = () => {
                           ) : null}
                         </div>
                         <span className="text-[#4a5568]">
-                          {formatCurrency(zone.averageNetEarning)} avg net
+                          {zone.median_net_pkr === null ? 'N/A' : `${formatCurrency(zone.median_net_pkr)} median`}
                         </span>
                       </div>
                       <div className="h-2.5 rounded-full bg-[#dde3ec]">
                         <div
                           className={classNames(
-                            "h-2.5 rounded-full",
-                            isAtRisk ? "bg-rose-500" : "bg-(--color-button)",
+                            'h-2.5 rounded-full',
+                            isAtRisk ? 'bg-rose-500' : 'bg-(--color-button)',
                           )}
                           style={{ width: `${widthPercent}%` }}
                         />
                       </div>
                     </article>
-                  );
+                  )
                 })}
               </div>
             </section>
@@ -211,44 +157,58 @@ const IncomeDistributionMapPage = () => {
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
               <h3 className="text-lg font-semibold text-[#1d1d1d]">Zone Comparison Table</h3>
               <p className="mt-1 text-sm text-[#667085]">
-                Compare average net earnings and total worker coverage per zone.
+                Compare median and percentile income stats by city zone.
               </p>
 
               <div className="mt-4 overflow-x-auto">
                 <table className="min-w-full border-separate border-spacing-y-2 text-sm">
                   <thead>
                     <tr className="text-left text-[#657083]">
-                      <th className="px-3 py-2 font-medium">City</th>
-                      <th className="px-3 py-2 font-medium">Zone</th>
-                      <th className="px-3 py-2 font-medium">Avg Net Earning</th>
-                      <th className="px-3 py-2 font-medium">Worker Count</th>
+                      <th className="px-3 py-2 font-medium">City Zone</th>
+                      <th className="px-3 py-2 font-medium">Cohort Size</th>
+                      <th className="px-3 py-2 font-medium">P25</th>
+                      <th className="px-3 py-2 font-medium">Median</th>
+                      <th className="px-3 py-2 font-medium">P75</th>
                       <th className="px-3 py-2 font-medium">Risk Signal</th>
                     </tr>
                   </thead>
                   <tbody>
                     {zoneAggregates.map((zone) => {
-                      const isAtRisk = zone.averageNetEarning < cityAverage * 0.82;
+                      const isAtRisk = typeof zone.median_net_pkr === 'number' && zone.median_net_pkr < cityAverage * 0.82
 
                       return (
-                        <tr key={`${zone.city}-${zone.zone}-table`} className="rounded-xl bg-[#f8f9fb]">
-                          <td className="rounded-l-xl px-3 py-3 text-[#3f4a5f]">{zone.city}</td>
-                          <td className="px-3 py-3 font-medium text-[#1d1d1d]">{zone.zone}</td>
-                          <td className="px-3 py-3 text-[#3f4a5f]">{formatCurrency(zone.averageNetEarning)}</td>
-                          <td className="px-3 py-3 text-[#3f4a5f]">{zone.workerCount}</td>
+                        <tr key={`${zone.city_zone}-table`} className="rounded-xl bg-[#f8f9fb]">
+                          <td className="rounded-l-xl px-3 py-3 font-medium text-[#1d1d1d]">{zone.city_zone}</td>
+                          <td className="px-3 py-3 text-[#3f4a5f]">{zone.cohort_size}</td>
+                          <td className="px-3 py-3 text-[#3f4a5f]">
+                            {zone.p25_net_pkr === null ? 'N/A' : formatCurrency(zone.p25_net_pkr)}
+                          </td>
+                          <td className="px-3 py-3 text-[#3f4a5f]">
+                            {zone.median_net_pkr === null ? 'N/A' : formatCurrency(zone.median_net_pkr)}
+                          </td>
+                          <td className="px-3 py-3 text-[#3f4a5f]">
+                            {zone.p75_net_pkr === null ? 'N/A' : formatCurrency(zone.p75_net_pkr)}
+                          </td>
                           <td className="rounded-r-xl px-3 py-3">
                             <span
                               className={classNames(
-                                "rounded-full px-2.5 py-1 text-xs font-medium",
-                                isAtRisk
-                                  ? "bg-rose-100 text-rose-700"
-                                  : "bg-emerald-100 text-emerald-700",
+                                'rounded-full px-2.5 py-1 text-xs font-medium',
+                                zone.suppressed
+                                  ? 'bg-slate-200 text-slate-700'
+                                  : isAtRisk
+                                    ? 'bg-rose-100 text-rose-700'
+                                    : 'bg-emerald-100 text-emerald-700',
                               )}
                             >
-                              {isAtRisk ? "Potential Exploitation" : "Stable"}
+                              {zone.suppressed
+                                ? 'Suppressed'
+                                : isAtRisk
+                                  ? 'Potential Exploitation'
+                                  : 'Stable'}
                             </span>
                           </td>
                         </tr>
-                      );
+                      )
                     })}
                   </tbody>
                 </table>
@@ -256,22 +216,37 @@ const IncomeDistributionMapPage = () => {
 
               {topLowIncomeZone ? (
                 <p className="mt-4 rounded-xl border border-[#f4d6dc] bg-[#fff3f5] px-3 py-2 text-sm text-[#7c2d3a]">
-                  Alert: {topLowIncomeZone.zone} ({topLowIncomeZone.city}) is earning significantly below city average.
-                  Consider targeted advocacy or platform audit here.
+                  Alert: {topLowIncomeZone.city_zone} is earning significantly below peer zones. Consider targeted advocacy or platform audit here.
                 </p>
               ) : null}
 
-              {!zoneAggregates.length ? (
+              {!isIncomeLoading && zoneAggregates.length === 0 ? (
                 <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
                   No income distribution data for current filters.
                 </p>
+              ) : null}
+
+              {error ? (
+                <button
+                  type="button"
+                  className="mt-4 rounded-xl border border-[#d6dce6] bg-white px-3 py-2 text-sm text-[#344054]"
+                  onClick={() => {
+                    clearError()
+                    void fetchIncomeDistribution({
+                      month: selectedMonth || undefined,
+                      category: selectedCategory || undefined,
+                    })
+                  }}
+                >
+                  Retry Loading Distribution
+                </button>
               ) : null}
             </section>
           </div>
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default IncomeDistributionMapPage;
+export default IncomeDistributionMapPage

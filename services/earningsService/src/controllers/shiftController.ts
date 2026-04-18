@@ -8,6 +8,7 @@ import { createTemplateCsv, parseCsvBuffer } from '../utils/csv.js';
 import { raise } from '../utils/errors.js';
 import { buildScreenshotPublicUrl, removeFileIfExists } from '../utils/files.js';
 import {
+  isUuid,
   minutesToHours,
   parseAmount,
   parseDateIso,
@@ -152,6 +153,14 @@ export const listShifts = async (req: Request, res: Response): Promise<void> => 
     raise(400, 'VALIDATION_ERROR', 'worker_id query parameter is required for internal requests.');
   }
   const workerId = selectedWorkerId as string;
+
+  if (!isUuid(workerId)) {
+    if (isInternal) {
+      raise(400, 'VALIDATION_ERROR', 'worker_id must be a valid UUID for internal requests.');
+    }
+
+    raise(401, 'UNAUTHORIZED', 'Invalid token subject format. Please sign in again.');
+  }
 
   const filters = [
     eq(shiftLogsTable.workerId, workerId),

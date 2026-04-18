@@ -71,6 +71,7 @@ Current limits (from auth service configuration):
 | POST | /api/auth/login | No | Authenticate user and issue tokens |
 | POST | /api/auth/refresh | No | Rotate refresh token and issue new token pair |
 | POST | /api/auth/logout | No | Revoke a refresh token |
+| POST | /api/auth/logout-current | Yes | Revoke all active refresh tokens for current user |
 | POST | /api/auth/forgot-password | No | Send password reset OTP |
 | POST | /api/auth/reset-password | No | Reset password using OTP |
 | GET | /api/auth/me | Yes | Return current authenticated user profile |
@@ -251,6 +252,27 @@ Success response (200):
 
 Possible errors:
 - 401: Invalid refresh token.
+
+#### 6.1) Logout Current User Session Set
+
+Method: POST
+Endpoint: /api/auth/logout-current
+Auth: Bearer access token required
+
+Request body:
+{}
+
+Success response (200):
+{
+  "message": "Logged out successfully."
+}
+
+Behavior:
+- Revokes all active refresh tokens for the authenticated user.
+- Works for all roles: worker, verifier, advocate.
+
+Possible errors:
+- 401: Missing, invalid, or expired access token.
 
 #### 7) Forgot Password
 

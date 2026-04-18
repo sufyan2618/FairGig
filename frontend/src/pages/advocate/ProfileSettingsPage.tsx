@@ -1,78 +1,90 @@
-import { useState, type FormEvent } from "react";
-import { Button } from "../../components/common/Button";
-import { LabeledSelectField } from "../../components/common/LabeledSelectField";
-import { LabeledTextField } from "../../components/common/LabeledTextField";
-import { Sidebar } from "../../components/layout/Sidebar";
-import { TopHeader } from "../../components/layout/TopHeader";
-import { advocateSidebarItems } from "../../data/advocateData";
-import { useSidebarNavigation } from "../../hooks/useSidebarNavigation";
-
-const cityOptions = [
-  { label: "Select city", value: "" },
-  { label: "Karachi", value: "Karachi" },
-  { label: "Lahore", value: "Lahore" },
-  { label: "Islamabad", value: "Islamabad" },
-  { label: "Rawalpindi", value: "Rawalpindi" },
-  { label: "Peshawar", value: "Peshawar" },
-  { label: "Quetta", value: "Quetta" },
-];
-
-const specializationOptions = [
-  { label: "Select specialization", value: "" },
-  { label: "Platform Policy Advocacy", value: "Platform Policy Advocacy" },
-  { label: "Labor Rights Support", value: "Labor Rights Support" },
-  { label: "Payment Dispute Handling", value: "Payment Dispute Handling" },
-  { label: "Account Recovery Cases", value: "Account Recovery Cases" },
-];
+import { useEffect, useState, type FormEvent } from 'react'
+import { Button } from '../../components/common/Button'
+import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { Sidebar } from '../../components/layout/Sidebar'
+import { TopHeader } from '../../components/layout/TopHeader'
+import { advocateSidebarItems } from '../../data/advocateData'
+import { useAdvocateProfileApi } from '../../hooks/api/useAdvocateProfileApi'
+import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
 
 const AdvocateProfileSettingsPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [fullName, setFullName] = useState("Sara Ahmed");
-  const [email, setEmail] = useState("sara.ahmed@fairgig.org");
-  const [city, setCity] = useState("Lahore");
-  const [specialization, setSpecialization] = useState("Labor Rights Support");
+  const [searchQuery, setSearchQuery] = useState('')
+  const [localNotice, setLocalNotice] = useState('')
+  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation()
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const {
+    profile,
+    isLoading,
+    isSaving,
+    error,
+    notice,
+    fetchProfile,
+    saveProfile,
+    changePassword,
+    clearError,
+    clearNotice,
+    passwordPayload,
+    updateProfileField,
+    updatePasswordField,
+    resetPasswordPayload,
+  } = useAdvocateProfileApi()
 
-  const [notice, setNotice] = useState("");
-  const { activeSidebarItem, onSidebarItemSelect } = useSidebarNavigation();
+  useEffect(() => {
+    void fetchProfile()
+  }, [fetchProfile])
 
-  const handleAccountSave = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!fullName.trim() || !email.trim() || !city || !specialization) {
-      setNotice("Please complete all account fields before saving.");
-      return;
+  useEffect(() => {
+    if (!notice) {
+      return
     }
 
-    setNotice("Profile settings saved successfully.");
-  };
+    const timeout = window.setTimeout(() => clearNotice(), 2800)
+    return () => window.clearTimeout(timeout)
+  }, [clearNotice, notice])
+
+  const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    clearError()
+    clearNotice()
+    setLocalNotice('')
+
+    if (!profile?.fullName.trim()) {
+      setLocalNotice('Full name is required.')
+      return
+    }
+
+    void saveProfile()
+  }
 
   const handlePasswordChange = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault()
+    clearError()
+    clearNotice()
+    setLocalNotice('')
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setNotice("Please fill all password fields.");
-      return;
+    if (
+      !passwordPayload.currentPassword ||
+      !passwordPayload.newPassword ||
+      !passwordPayload.confirmPassword
+    ) {
+      setLocalNotice('Please fill all password fields.')
+      return
     }
 
-    if (newPassword.length < 8) {
-      setNotice("New password must be at least 8 characters.");
-      return;
+    if (passwordPayload.newPassword.length < 8) {
+      setLocalNotice('New password must be at least 8 characters.')
+      return
     }
 
-    if (newPassword !== confirmPassword) {
-      setNotice("New password and confirm password do not match.");
-      return;
+    if (passwordPayload.newPassword !== passwordPayload.confirmPassword) {
+      setLocalNotice('New and confirm password do not match.')
+      return
     }
 
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setNotice("Password changed successfully.");
-  };
+    void changePassword().then(() => {
+      resetPasswordPayload()
+    })
+  }
 
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
@@ -96,90 +108,98 @@ const AdvocateProfileSettingsPage = () => {
                 Manage your advocate account details and update your password securely.
               </p>
 
+              {error ? (
+                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </p>
+              ) : null}
+
+              {notice ? (
+                <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {notice}
+                </p>
+              ) : null}
+
+              {localNotice ? (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  {localNotice}
+                </p>
+              ) : null}
+
               <div className="mt-5 grid gap-5 xl:grid-cols-2">
-                <form onSubmit={handleAccountSave} className="rounded-2xl border border-[#e3e7ef] bg-[#f8f9fb] p-4">
-                  <h3 className="mb-3 text-lg font-semibold text-[#1d1d1d]">Basic Account Settings</h3>
+                <form
+                  onSubmit={handleProfileSave}
+                  className="rounded-2xl border border-[#e3e7ef] bg-[#f8f9fb] p-4"
+                >
+                  <h3 className="mb-3 text-lg font-semibold text-[#1d1d1d]">Account Settings</h3>
                   <div className="grid gap-3">
                     <LabeledTextField
                       label="Full Name"
-                      value={fullName}
-                      onChange={setFullName}
+                      value={profile?.fullName ?? ''}
+                      onChange={(value) => updateProfileField('fullName', value)}
                       placeholder="Enter full name"
                       required
                     />
                     <LabeledTextField
                       label="Email Address"
-                      value={email}
-                      onChange={setEmail}
                       type="email"
-                      placeholder="name@fairgig.org"
+                      value={profile?.email ?? ''}
+                      onChange={() => undefined}
                       required
-                    />
-                    <LabeledSelectField
-                      label="City"
-                      options={cityOptions}
-                      value={city}
-                      onChange={setCity}
-                      required
-                    />
-                    <LabeledSelectField
-                      label="Specialization"
-                      options={specializationOptions}
-                      value={specialization}
-                      onChange={setSpecialization}
-                      required
+                      disabled
                     />
                   </div>
                   <div className="mt-4">
-                    <Button type="submit">Save Account Settings</Button>
+                    <Button type="submit" disabled={isLoading || isSaving || !profile}>
+                      {isSaving ? 'Saving...' : 'Save Account Settings'}
+                    </Button>
                   </div>
                 </form>
 
-                <form onSubmit={handlePasswordChange} className="rounded-2xl border border-[#e3e7ef] bg-[#f8f9fb] p-4">
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="rounded-2xl border border-[#e3e7ef] bg-[#f8f9fb] p-4"
+                >
                   <h3 className="mb-3 text-lg font-semibold text-[#1d1d1d]">Password Change</h3>
                   <div className="grid gap-3">
                     <LabeledTextField
                       label="Current Password"
-                      value={currentPassword}
-                      onChange={setCurrentPassword}
+                      value={passwordPayload.currentPassword}
+                      onChange={(value) => updatePasswordField('currentPassword', value)}
                       type="password"
                       placeholder="Current password"
                       required
                     />
                     <LabeledTextField
                       label="New Password"
-                      value={newPassword}
-                      onChange={setNewPassword}
+                      value={passwordPayload.newPassword}
+                      onChange={(value) => updatePasswordField('newPassword', value)}
                       type="password"
                       placeholder="At least 8 characters"
                       required
                     />
                     <LabeledTextField
                       label="Confirm New Password"
-                      value={confirmPassword}
-                      onChange={setConfirmPassword}
+                      value={passwordPayload.confirmPassword}
+                      onChange={(value) => updatePasswordField('confirmPassword', value)}
                       type="password"
                       placeholder="Re-enter new password"
                       required
                     />
                   </div>
                   <div className="mt-4">
-                    <Button type="submit">Update Password</Button>
+                    <Button type="submit" disabled={isLoading || isSaving}>
+                      {isSaving ? 'Updating...' : 'Update Password'}
+                    </Button>
                   </div>
                 </form>
               </div>
-
-              {notice ? (
-                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
-                  {notice}
-                </p>
-              ) : null}
             </section>
           </div>
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AdvocateProfileSettingsPage;
+export default AdvocateProfileSettingsPage

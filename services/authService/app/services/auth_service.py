@@ -231,6 +231,14 @@ class AuthService:
             refresh_record.revoked_at = datetime.now(UTC)
             await self.db.commit()
 
+    async def logout_current_user(self, *, user: User) -> None:
+        await self.db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=datetime.now(UTC))
+        )
+        await self.db.commit()
+
     async def forgot_password(self, *, email: str) -> None:
         user = await self._get_user_by_email(email)
         if not user or not user.is_active or not user.is_email_verified:

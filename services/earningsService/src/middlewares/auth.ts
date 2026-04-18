@@ -4,6 +4,7 @@ import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import type { AuthUser, UserRole } from '../types/auth.js';
 import { raise } from '../utils/errors.js';
+import { isUuid } from '../utils/validation.js';
 
 const getBearerToken = (authorization?: string): string => {
   if (!authorization || !authorization.startsWith('Bearer ')) {
@@ -32,12 +33,18 @@ const decodeAccessToken = (token: string): AuthUser => {
   }
 
   const payload = decoded as JwtPayload & { role?: string; type?: string };
-  const subject = payload.sub as string | undefined;
+  const subject = payload.sub;
   const role = payload.role as string | undefined;
   const tokenType = payload.type as string | undefined;
 
-  if (!subject) {
+  if (typeof subject !== 'string' || !subject.trim()) {
     raise(401, 'UNAUTHORIZED', 'Invalid token subject.');
+  }
+
+  const subjectId = subject as string;
+
+  if (!isUuid(subjectId)) {
+    raise(401, 'UNAUTHORIZED', 'Invalid token subject format. Please sign in again.');
   }
 
   if (!role || (role !== 'worker' && role !== 'verifier' && role !== 'advocate')) {
@@ -49,7 +56,7 @@ const decodeAccessToken = (token: string): AuthUser => {
   }
 
   return {
-    id: subject as string,
+    id: subjectId,
     role: role as UserRole,
   };
 };

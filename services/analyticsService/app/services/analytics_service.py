@@ -391,7 +391,7 @@ def get_overview_kpis() -> OverviewKpisResponse:
         """
         SELECT COUNT(DISTINCT worker_id)::int AS total_active_workers
         FROM shift_logs
-        WHERE verification_status = 'verified' AND deleted_at IS NULL
+        WHERE deleted_at IS NULL
         """
     ) or {"total_active_workers": 0}
 

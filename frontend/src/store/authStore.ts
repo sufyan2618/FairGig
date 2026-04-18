@@ -239,13 +239,18 @@ export const useAuthStore = create<AuthStoreState>()(
 			},
 
 			logout: async () => {
+				const accessToken = get().session?.accessToken
 				const refreshToken = get().session?.refreshToken
 				set({ isLoading: true, error: null })
 
 				try {
-					if (refreshToken) {
+					if (accessToken) {
+						await authApi.logoutCurrent(accessToken)
+					} else if (refreshToken) {
 						await authApi.logout({ refresh_token: refreshToken })
 					}
+				} catch {
+					// Clearing local session state is sufficient for client logout even if network revoke fails.
 				} finally {
 					set({
 						...getCleanAuthState(),

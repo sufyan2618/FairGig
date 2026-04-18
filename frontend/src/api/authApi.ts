@@ -55,6 +55,15 @@ export const authApi = {
 		return response.data
 	},
 
+	logoutCurrent: async (accessToken: string): Promise<BasicMessageResponse> => {
+		const response = await apiHttp.post<BasicMessageResponse>(
+			`${AUTH_PREFIX}/logout-current`,
+			{},
+			withAccessToken(accessToken),
+		)
+		return response.data
+	},
+
 	forgotPassword: async (payload: ForgotPasswordRequest): Promise<BasicMessageResponse> => {
 		const response = await apiHttp.post<BasicMessageResponse>(`${AUTH_PREFIX}/forgot-password`, payload)
 		return response.data

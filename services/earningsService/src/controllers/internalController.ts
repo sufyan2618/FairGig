@@ -4,7 +4,7 @@ import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { shiftLogsTable } from '../db/schema.js';
 import { raise } from '../utils/errors.js';
-import { minutesToHours, parseDateIso } from '../utils/validation.js';
+import { isUuid, minutesToHours, parseDateIso } from '../utils/validation.js';
 
 const getPathParam = (req: Request, name: string): string => {
   const raw = req.params[name];
@@ -39,27 +39,52 @@ const getSingleQueryValue = (value: unknown): string | undefined => {
 export const getWorkerSummary = async (req: Request, res: Response): Promise<void> => {
   const workerId = getPathParam(req, 'workerId');
 
-  const filters = [
+  if (!isUuid(workerId)) {
+    raise(400, 'VALIDATION_ERROR', 'workerId path parameter must be a valid UUID.');
+  }
+
+  const baseFilters = [
     eq(shiftLogsTable.workerId, workerId),
-    eq(shiftLogsTable.verificationStatus, 'verified'),
     sql`${shiftLogsTable.deletedAt} IS NULL`,
   ];
 
   const dateFrom = parseDateIso(getSingleQueryValue(req.query.date_from), 'date_from');
   if (dateFrom) {
-    filters.push(gte(shiftLogsTable.shiftDate, dateFrom));
+    baseFilters.push(gte(shiftLogsTable.shiftDate, dateFrom));
   }
 
   const dateTo = parseDateIso(getSingleQueryValue(req.query.date_to), 'date_to');
   if (dateTo) {
-    filters.push(lte(shiftLogsTable.shiftDate, dateTo));
+    baseFilters.push(lte(shiftLogsTable.shiftDate, dateTo));
   }
 
-  const shifts = await db
-    .select()
-    .from(shiftLogsTable)
-    .where(and(...filters))
-    .orderBy(desc(shiftLogsTable.shiftDate));
+  const verifiedFilters = [
+    ...baseFilters,
+    eq(shiftLogsTable.verificationStatus, 'verified'),
+  ];
+
+  const [shifts, statusRows] = await Promise.all([
+    db
+      .select()
+      .from(shiftLogsTable)
+      .where(and(...verifiedFilters))
+      .orderBy(desc(shiftLogsTable.shiftDate)),
+    db
+      .select({
+        verification_status: shiftLogsTable.verificationStatus,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(shiftLogsTable)
+      .where(and(...baseFilters))
+      .groupBy(shiftLogsTable.verificationStatus),
+  ]);
+
+  const statusBreakdown = statusRows.reduce<Record<string, number>>((acc, row) => {
+    acc[row.verification_status] = row.total;
+    return acc;
+  }, {});
+
+  const totalShiftsInRange = statusRows.reduce((sum, row) => sum + row.total, 0);
 
   const totals = {
     total_gross: 0,
@@ -94,6 +119,8 @@ export const getWorkerSummary = async (req: Request, res: Response): Promise<voi
     date_from: dateFrom ?? null,
     date_to: dateTo ?? null,
     totals,
+    total_shifts_in_range: totalShiftsInRange,
+    status_breakdown: statusBreakdown,
     per_platform_breakdown: Array.from(breakdownMap.entries()).map(([platform, value]) => ({
       platform,
       ...value,

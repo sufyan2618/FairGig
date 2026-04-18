@@ -155,6 +155,27 @@ async def fetch_verified_summary(
     payload = response.json()
     shifts_raw = payload.get("verified_shifts")
     if not isinstance(shifts_raw, list) or len(shifts_raw) == 0:
+        total_shifts_in_range = payload.get("total_shifts_in_range")
+        status_breakdown = payload.get("status_breakdown")
+
+        if isinstance(total_shifts_in_range, int) and total_shifts_in_range > 0 and isinstance(status_breakdown, dict):
+            non_verified_statuses = [
+                str(status_name)
+                for status_name, count in status_breakdown.items()
+                if str(status_name) != "verified" and isinstance(count, int) and count > 0
+            ]
+
+            if len(non_verified_statuses) > 0:
+                human_readable_statuses = ", ".join(sorted(non_verified_statuses))
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        "You have logged shifts in this date range, but none are verified yet. "
+                        f"Current statuses: {human_readable_statuses}. "
+                        "Please wait for verifier approval before generating certificate."
+                    ),
+                )
+
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No verified shifts found for the requested certificate range.",

@@ -102,6 +102,16 @@ async def logout(
     return MessageResponse(message="Logged out successfully.")
 
 
+@router.post("/logout-current", response_model=MessageResponse)
+async def logout_current(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    auth_service = AuthService(db)
+    await auth_service.logout_current_user(user=current_user)
+    return MessageResponse(message="Logged out successfully.")
+
+
 @router.post("/forgot-password", response_model=MessageResponse)
 async def forgot_password(
     payload: ForgotPasswordRequest,
