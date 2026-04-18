@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLottie } from 'lottie-react'
 import loginAnimation from '../animations/Login verification.json'
+import logo from '../assets/logo.jpeg'
 
 const MOCK_EMAIL = 'demo@ecommerce.com'
 const MOCK_PASSWORD = 'demo123'
@@ -59,26 +60,26 @@ export const Login = () => {
 	}
 
 	return (
-		<main className="auth-viewport relative h-screen overflow-hidden bg-[#FFF4EB] text-[#1D1D1D]">
+		<main className="auth-viewport relative min-h-dvh bg-[#FFF4EB] text-[#1D1D1D]">
 			<div className="pointer-events-none absolute -left-20 top-10 h-64 w-64 rounded-full bg-[#FF914D]/20 blur-3xl" />
 			<div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-[#FF914D]/25 blur-3xl" />
 
-			<div className="auth-content relative mx-auto grid h-full w-full max-w-6xl grid-cols-1 items-stretch gap-4 px-4 py-3 sm:px-6 md:grid-cols-2 md:gap-4 lg:gap-5 lg:py-3">
+			<div className="auth-content relative mx-auto grid w-full max-w-4xl grid-cols-1 items-start gap-2.5 px-3 py-2 sm:px-4 md:grid-cols-2 md:items-stretch md:gap-2.5 lg:gap-3 lg:py-2">
 				<section
 					aria-label="Product preview"
-					className="flex flex-col rounded-3xl border border-[#FF914D]/20 bg-white/80 p-5 shadow-xl shadow-[#FF914D]/10 backdrop-blur-sm sm:p-6 md:h-full"
+					className="flex flex-col rounded-3xl border border-[#FF914D]/20 bg-white/80 p-3 shadow-xl shadow-[#FF914D]/10 backdrop-blur-sm sm:p-3.5"
 				>
-					<div className="mb-3 flex flex-1 items-center justify-center overflow-hidden rounded-2xl bg-[#FFF9F4] p-2 sm:p-3 md:min-h-72 [&>div]:h-full [&>div]:w-full">
+					<div className="mb-2 flex min-h-32 items-center justify-center overflow-hidden rounded-2xl bg-[#FFF9F4] p-1.5 sm:min-h-40 sm:p-2 md:min-h-48 [&>div]:h-full [&>div]:w-full">
 						{loginAnimationView}
 					</div>
 
-					<h2 className="text-xl font-bold tracking-tight sm:text-2xl">Analyze Your Reach</h2>
-					<p className="mt-2 text-sm leading-5 text-[#1D1D1D]/80 sm:text-[15px]">
+					<h2 className="text-center text-base font-bold tracking-tight sm:text-lg">Analyze Your Reach</h2>
+					<p className="mt-1.5 text-sm leading-5 text-[#1D1D1D]/80 sm:text-sm">
 						Connect with your audience using our powerful email analytics engine. Track opens, clicks, and
 						conversions in real-time.
 					</p>
 
-					<div className="mt-4 flex items-center gap-3 rounded-xl bg-[#1D1D1D] px-4 py-2.5 text-white" aria-hidden="true">
+					<div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1D1D1D] px-3 py-1.5 text-white" aria-hidden="true">
 						<div className="-space-x-2">
 							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#FF914D] text-xs font-semibold">
 								J
@@ -96,19 +97,19 @@ export const Login = () => {
 
 				<section
 					aria-label="Login form"
-					className="rounded-3xl border border-[#1D1D1D]/10 bg-white p-5 shadow-xl shadow-[#1D1D1D]/5 sm:p-6 md:h-full"
+					className="flex flex-col justify-center rounded-3xl border border-[#1D1D1D]/10 bg-white p-3 shadow-xl shadow-[#1D1D1D]/5 sm:p-3.5"
 				>
-					<div className="mb-4 flex items-center gap-3">
-						<span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF914D] text-lg font-bold text-white">
-							M
+					<div className="mb-2.5 flex items-center justify-center gap-2.5 text-center">
+						<span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#1D1D1D]/10 bg-white">
+							<img src={logo} alt="FairGig logo" className="h-full w-full object-cover" />
 						</span>
-						<strong className="text-base tracking-wide">MailFlow</strong>
+						<strong className="text-base tracking-wide">FairGig</strong>
 					</div>
 
-					<h1 className="text-2xl font-black tracking-tight sm:text-[1.75rem]">Welcome back</h1>
-					<p className="mt-2 text-sm text-[#1D1D1D]/70">Please enter your details to sign in.</p>
+					<h1 className="text-center text-lg font-black tracking-tight sm:text-xl">Welcome back</h1>
+					<p className="mt-1.5 text-center text-sm text-[#1D1D1D]/70">Please enter your details to sign in.</p>
 
-					<form onSubmit={onSubmit} className="mt-5 space-y-3.5">
+					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5">
 						<div className="space-y-2">
 							<label className="text-sm font-medium" htmlFor="email">
 								Email address
@@ -120,7 +121,7 @@ export const Login = () => {
 								value={email}
 								onChange={(event) => setEmail(event.target.value)}
 								required
-								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-4 py-2.5 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
+								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
 						</div>
 
@@ -141,7 +142,7 @@ export const Login = () => {
 								value={password}
 								onChange={(event) => setPassword(event.target.value)}
 								required
-								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-4 py-2.5 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
+								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
 						</div>
 
@@ -160,7 +161,7 @@ export const Login = () => {
 
 						<button
 							type="submit"
-							className="w-full rounded-xl bg-[#FF914D] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+							className="w-full rounded-xl bg-[#FF914D] px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-95"
 						>
 							Sign in
 						</button>
@@ -174,27 +175,27 @@ export const Login = () => {
 						<div className="grid grid-cols-2 gap-3" aria-hidden="true">
 							<button
 								type="button"
-								className="rounded-xl border border-[#1D1D1D]/15 bg-white px-4 py-2.5 text-sm font-medium hover:bg-[#FFF7F0]"
+								className="rounded-xl border border-[#1D1D1D]/15 bg-white px-3.5 py-2 text-sm font-medium hover:bg-[#FFF7F0]"
 							>
 								Google
 							</button>
 							<button
 								type="button"
-								className="rounded-xl border border-[#1D1D1D]/15 bg-[#1D1D1D] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#2B2B2B]"
+								className="rounded-xl border border-[#1D1D1D]/15 bg-[#1D1D1D] px-3.5 py-2 text-sm font-medium text-white hover:bg-[#2B2B2B]"
 							>
 								GitHub
 							</button>
 						</div>
 					</form>
 
-					<p className="mt-4 text-sm text-[#1D1D1D]/75">
+					<p className="mt-2.5 text-center text-sm text-[#1D1D1D]/75">
 						Don&apos;t have an account?{' '}
 						<Link to="/signup" className="font-semibold text-[#FF914D] hover:underline">
 							Sign up for free
 						</Link>
 					</p>
 
-					<p className="mt-5 text-xs text-[#1D1D1D]/50">@ 2026 MailFlow Inc. All rights reserved.</p>
+					<p className="mt-3 text-center text-xs text-[#1D1D1D]/50">@ 2026 FairGig Inc. All rights reserved.</p>
 				</section>
 			</div>
 		</main>

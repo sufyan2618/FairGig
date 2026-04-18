@@ -21,20 +21,12 @@ import ProfileSettingsPage from './pages/worker/ProfileSettingsPage.tsx'
 import UploadScreenshotPage from './pages/worker/UploadScreenshotPage.tsx'
 import { useEffect, useState, type ReactNode } from 'react'
 
-type UserRole = 'worker' | 'advocate'
-
 interface ToastState {
   message: string
   tone?: 'error' | 'success'
 }
 
 const getIsAuthenticated = () => localStorage.getItem('mailflow_auth') === 'true'
-
-const getUserRole = (): UserRole =>
-  localStorage.getItem('mailflow_role') === 'advocate' ? 'advocate' : 'worker'
-
-const getHomeRouteForRole = (role: UserRole): string =>
-  role === 'advocate' ? '/advocate/dashboard' : '/dashboard'
 
 const RouteToast = () => {
   const location = useLocation()
@@ -80,13 +72,10 @@ const RouteToast = () => {
 }
 
 interface ProtectedRouteProps {
-  allowedRole: UserRole
   children: ReactNode
 }
 
-const ProtectedRoute = ({ allowedRole, children }: ProtectedRouteProps) => {
-  void allowedRole
-
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (!getIsAuthenticated()) {
     return <Navigate to="/login" replace state={{ toast: { message: 'Please sign in first.', tone: 'error' } }} />
   }
@@ -99,15 +88,13 @@ const FallbackRedirect = () => {
     return <Navigate to="/login" replace />
   }
 
-  const role = getUserRole()
-
   return (
     <Navigate
-      to={getHomeRouteForRole(role)}
+      to="/dashboard"
       replace
       state={{
         toast: {
-          message: 'Page not found or access denied. Redirected to your dashboard.',
+          message: 'Page not found. Redirected to dashboard.',
           tone: 'error',
         },
       }}
@@ -125,7 +112,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/dashboard"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <AdvocateDashboardPage />
           </ProtectedRoute>
         }
@@ -133,7 +120,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/commission-tracker"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <CommissionRateTrackerPage />
           </ProtectedRoute>
         }
@@ -141,7 +128,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/complaint-analytics"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <ComplaintAnalyticsPage />
           </ProtectedRoute>
         }
@@ -149,7 +136,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/grievance-board"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <GrievanceModerationPage />
           </ProtectedRoute>
         }
@@ -157,7 +144,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/income-distribution-map"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <IncomeDistributionMapPage />
           </ProtectedRoute>
         }
@@ -165,7 +152,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/vulnerability-flags"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <VulnerabilityFlagsPage />
           </ProtectedRoute>
         }
@@ -173,7 +160,7 @@ const AppRoutes = () => (
       <Route
         path="/advocate/profile-settings"
         element={
-          <ProtectedRoute allowedRole="advocate">
+          <ProtectedRoute>
             <AdvocateProfileSettingsPage />
           </ProtectedRoute>
         }
@@ -182,7 +169,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <App />
           </ProtectedRoute>
         }
@@ -190,7 +177,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/log-shift"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <LogShiftPage />
           </ProtectedRoute>
         }
@@ -198,7 +185,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/my-earnings"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <MyEarningsPage />
           </ProtectedRoute>
         }
@@ -206,7 +193,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/my-analytics"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <MyAnalyticsPage />
           </ProtectedRoute>
         }
@@ -214,7 +201,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/income-certificate"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <IncomeCertificatePage />
           </ProtectedRoute>
         }
@@ -222,7 +209,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/grievance-board"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <GrievanceBoardPage />
           </ProtectedRoute>
         }
@@ -230,7 +217,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/profile-settings"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <ProfileSettingsPage />
           </ProtectedRoute>
         }
@@ -238,7 +225,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/upload-screenshot"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <UploadScreenshotPage />
           </ProtectedRoute>
         }
@@ -246,7 +233,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/upload-screenshots"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <UploadScreenshotPage />
           </ProtectedRoute>
         }
@@ -254,7 +241,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/greivance-board"
         element={
-          <ProtectedRoute allowedRole="worker">
+          <ProtectedRoute>
             <GrievanceBoardPage />
           </ProtectedRoute>
         }
