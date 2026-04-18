@@ -4,7 +4,7 @@
     {
       "label": "FairGig Dev: Auth Service",
       "type": "shell",
-      "command": "Set-Location \"${workspaceFolder}/services/authService\"; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+      "command": "Set-Location \"${workspaceFolder}/services/authService\"; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/authService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --reload --port 8000",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -32,7 +32,7 @@
     {
       "label": "FairGig Dev: Anomaly Service",
       "type": "shell",
-      "command": "Set-Location \"${workspaceFolder}/services/anamolyService\"; & \"${workspaceFolder}/services/anamolyService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8002",
+      "command": "Set-Location \"${workspaceFolder}/services/anamolyService\"; & \"${workspaceFolder}/services/anamolyService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --reload --port 8002",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -60,7 +60,7 @@
     {
       "label": "FairGig Dev: Analytics Service",
       "type": "shell",
-      "command": "Set-Location \"${workspaceFolder}/services/analyticsService\"; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8003",
+      "command": "Set-Location \"${workspaceFolder}/services/analyticsService\"; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m alembic upgrade head; & \"${workspaceFolder}/services/analyticsService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --reload --port 8003",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -74,7 +74,7 @@
     {
       "label": "FairGig Dev: Certificate Service",
       "type": "shell",
-      "command": "Set-Location \"${workspaceFolder}/services/certificateService\"; & \"${workspaceFolder}/services/certificateService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8004",
+      "command": "Set-Location \"${workspaceFolder}/services/certificateService\"; & \"${workspaceFolder}/services/certificateService/.venv/Scripts/python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --reload --port 8004",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -88,7 +88,7 @@
     {
       "label": "FairGig Dev: API Gateway",
       "type": "shell",
-      "command": "Set-Location \"${workspaceFolder}/ApiGateway\"; node dev-gateway.mjs",
+      "command": "Set-Location \"${workspaceFolder}/ApiGateway\"; node --watch dev-gateway.mjs",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -111,6 +111,21 @@
         "reveal": "always",
         "clear": false
       },
+      "problemMatcher": []
+    },
+    {
+      "label": "FairGig Dev: Run All",
+      "dependsOn": [
+        "FairGig Dev: Auth Service",
+        "FairGig Dev: Earnings Service",
+        "FairGig Dev: Anomaly Service",
+        "FairGig Dev: Grievance Service",
+        "FairGig Dev: Analytics Service",
+        "FairGig Dev: Certificate Service",
+        "FairGig Dev: API Gateway",
+        "FairGig Dev: Frontend"
+      ],
+      "dependsOrder": "parallel",
       "problemMatcher": []
     },
     {

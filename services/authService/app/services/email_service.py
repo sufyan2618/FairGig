@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import httpx
 from fastapi import HTTPException, status
 
 from app.core.config import settings
 from app.models.otp_code import OtpPurpose
+
+
+logger = logging.getLogger(__name__)
 
 
 class BrevoEmailService:
@@ -16,7 +21,17 @@ class BrevoEmailService:
         otp_code: str,
         purpose: OtpPurpose,
     ) -> None:
+        is_development = settings.ENVIRONMENT.lower() == "development"
+
         if not settings.BREVO_API_KEY:
+            if is_development:
+                logger.warning(
+                    "BREVO_API_KEY missing; skipping OTP email in development. recipient=%s purpose=%s otp=%s",
+                    recipient_email,
+                    purpose.value,
+                    otp_code,
+                )
+                return
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Brevo API key is not configured.",
@@ -57,15 +72,46 @@ class BrevoEmailService:
             "content-type": "application/json",
             "api-key": settings.BREVO_API_KEY,
         }
+        logger.info("Sending OTP email via Brevo to %s for purpose %s", recipient_email, purpose.value)
+        logger.info("brevo api key is set: %s", bool(settings.BREVO_API_KEY))
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(
-                f"{settings.BREVO_BASE_URL}/smtp/email",
-                headers=headers,
-                json=payload,
-            )
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(
+                    f"{settings.BREVO_BASE_URL}/smtp/email",
+                    headers=headers,
+                    json=payload,
+                )
+        except httpx.HTTPError as exc:
+            logger.exception("Brevo request failed for recipient=%s", recipient_email)
+            if is_development:
+                logger.warning(
+                    "Continuing without email in development. recipient=%s purpose=%s otp=%s",
+                    recipient_email,
+                    purpose.value,
+                    otp_code,
+                )
+                return
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Unable to send OTP email via Brevo.",
+            ) from exc
 
         if response.status_code >= 400:
+            logger.error(
+                "Brevo rejected OTP email: status=%s recipient=%s body=%s",
+                response.status_code,
+                recipient_email,
+                response.text,
+            )
+            if is_development:
+                logger.warning(
+                    "Continuing without email in development. recipient=%s purpose=%s otp=%s",
+                    recipient_email,
+                    purpose.value,
+                    otp_code,
+                )
+                return
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Unable to send OTP email via Brevo.",

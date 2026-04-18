@@ -27,7 +27,12 @@ class OtpCode(Base):
         index=True,
     )
     purpose: Mapped[OtpPurpose] = mapped_column(
-        Enum(OtpPurpose, name="otp_purpose", native_enum=True),
+        Enum(
+            OtpPurpose,
+            name="otp_purpose",
+            native_enum=True,
+            values_callable=lambda enum_class: [member.value for member in enum_class],
+        ),
         nullable=False,
     )
     code_hash: Mapped[str] = mapped_column(String(128), nullable=False)
