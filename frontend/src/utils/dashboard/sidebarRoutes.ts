@@ -1,6 +1,12 @@
 import type { SidebarItemId } from "../../types/dashboard";
 
 const sidebarRouteMap: Record<SidebarItemId, string> = {
+  "advocate-dashboard": "/advocate/dashboard",
+  "advocate-commission-tracker": "/advocate/commission-tracker",
+  "advocate-income-distribution-map": "/advocate/income-distribution-map",
+  "advocate-grievance-moderation": "/advocate/grievance-board",
+  "advocate-complaint-analytics": "/advocate/complaint-analytics",
+  "advocate-profile-settings": "/advocate/profile-settings",
   "log-shift": "/dashboard/log-shift",
   "my-earnings": "/dashboard/my-earnings",
   "upload-screenshots": "/dashboard/upload-screenshot",
@@ -11,6 +17,12 @@ const sidebarRouteMap: Record<SidebarItemId, string> = {
 };
 
 const pathToSidebarItemMap: Record<string, SidebarItemId> = {
+  "/advocate/dashboard": "advocate-dashboard",
+  "/advocate/commission-tracker": "advocate-commission-tracker",
+  "/advocate/income-distribution-map": "advocate-income-distribution-map",
+  "/advocate/grievance-board": "advocate-grievance-moderation",
+  "/advocate/complaint-analytics": "advocate-complaint-analytics",
+  "/advocate/profile-settings": "advocate-profile-settings",
   "/dashboard/log-shift": "log-shift",
   "/dashboard/my-earnings": "my-earnings",
   "/dashboard/upload-screenshot": "upload-screenshots",
