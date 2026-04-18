@@ -12,6 +12,11 @@ import IncomeCertificatePage from './pages/worker/IncomeCertificatePage.tsx'
 import GrievanceBoardPage from './pages/worker/GrievanceBoardPage.tsx'
 import ProfileSettingsPage from './pages/worker/ProfileSettingsPage.tsx'
 import UploadScreenshotPage from './pages/worker/UploadScreenshotPage.tsx'
+import VerifierDashboardPage from './pages/verifier/DashboardPage.tsx'
+import VerificationQueuePage from './pages/verifier/VerificationQueuePage.tsx'
+import VerificationReviewPage from './pages/verifier/VerificationReviewPage.tsx'
+import VerifiedHistoryPage from './pages/verifier/VerifiedHistoryPage.tsx'
+import VerifierProfileSettingsPage from './pages/verifier/ProfileSettingsPage.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,6 +34,12 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/dashboard/upload-screenshot" element={<UploadScreenshotPage />} />
         <Route path="/dashboard/upload-screenshots" element={<UploadScreenshotPage />} />
         <Route path="/dashboard/greivance-board" element={<GrievanceBoardPage />} />
+        <Route path="/verifier" element={<Navigate to="/verifier/dashboard" replace />} />
+        <Route path="/verifier/dashboard" element={<VerifierDashboardPage />} />
+        <Route path="/verifier/verification-queue" element={<VerificationQueuePage />} />
+        <Route path="/verifier/verification-queue/:submissionId/review" element={<VerificationReviewPage />} />
+        <Route path="/verifier/verified-history" element={<VerifiedHistoryPage />} />
+        <Route path="/verifier/profile-settings" element={<VerifierProfileSettingsPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
