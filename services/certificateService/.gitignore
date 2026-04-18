@@ -6,6 +6,9 @@ __pycache__/
 # Virtual environments
 
 .env.*
+!.env.example
+
+.venv/
 
 mail/
 venv/

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FairGig Income Certificate</title>
+  <style>
+    :root {
+      --page-bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --ink: #1b1b1b;
+      --muted: #5f6368;
+      --line: #d6d9de;
+      --accent: #124f95;
+      --accent-soft: #eaf2fc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: var(--ink);
+      font-family: "Times New Roman", Georgia, serif;
+      line-height: 1.35;
+    }
+
+    .sheet {
+      max-width: 900px;
+      margin: 24px auto;
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      padding: 28px;
+      box-shadow: 0 10px 24px rgba(8, 30, 53, 0.08);
+    }
+
+    .header {
+      border-bottom: 2px solid var(--accent);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+    }
+
+    .brand {
+      font-size: 28px;
+      color: var(--accent);
+      letter-spacing: 0.03em;
+      margin: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 24px;
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    .meta-row strong {
+      min-width: 130px;
+      display: inline-block;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .section-title {
+      margin: 18px 0 10px;
+      font-size: 17px;
+      color: var(--accent);
+      border-left: 4px solid var(--accent);
+      padding-left: 8px;
+    }
+
+    .summary-strip {
+      background: var(--accent-soft);
+      border: 1px solid #cdddf4;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 16px;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .summary-item strong {
+      color: var(--accent);
+      margin-right: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #153f70;
+      font-weight: 700;
+    }
+
+    .declaration {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      padding: 12px;
+      background: #fbfcfd;
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      font-size: 13px;
+    }
+
+    .signature-box {
+      border-top: 1px solid var(--ink);
+      padding-top: 6px;
+      margin-top: 24px;
+      width: 100%;
+      text-align: center;
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 13mm;
+      }
+
+      body {
+        background: #ffffff;
+      }
+
+      .sheet {
+        box-shadow: none;
+        border: none;
+        margin: 0;
+        max-width: none;
+        padding: 0;
+      }
+
+      .section-title {
+        break-after: avoid;
+      }
+
+      table,
+      tr,
+      td,
+      th {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <header class="header">
+      <h1 class="brand">FairGig Income Certificate</h1>
+      <p class="subtitle">Verified earning summary generated for third-party income verification.</p>
+    </header>
+
+    <section class="meta-grid" aria-label="certificate metadata">
+      <div class="meta-row"><strong>Certificate ID:</strong> {{ certificate_id }}</div>
+      <div class="meta-row"><strong>Issued On:</strong> {{ issued_on }}</div>
+      <div class="meta-row"><strong>Worker Name:</strong> {{ worker_name }}</div>
+      <div class="meta-row"><strong>Worker ID:</strong> {{ worker_id_masked }}</div>
+      <div class="meta-row"><strong>Worker Email:</strong> {{ worker_email or "N/A" }}</div>
+      <div class="meta-row"><strong>Coverage Period:</strong> {{ period_label }}</div>
+    </section>
+
+    <h2 class="section-title">Income Summary</h2>
+    <section class="summary-strip" aria-label="income summary totals">
+      <div class="summary-item"><strong>Total Verified Shifts:</strong> {{ summary.total_shifts }}</div>
+      <div class="summary-item"><strong>Total Gross Earned:</strong> {{ summary.total_gross }}</div>
+      <div class="summary-item"><strong>Total Deductions:</strong> {{ summary.total_deductions }}</div>
+      <div class="summary-item"><strong>Total Net Received:</strong> {{ summary.total_net }}</div>
+    </section>
+
+    <h2 class="section-title">Platform Breakdown</h2>
+    <table aria-label="platform breakdown table">
+      <thead>
+        <tr>
+          <th style="width: 28%;">Platform</th>
+          <th style="width: 15%;">Shifts</th>
+          <th style="width: 19%;">Gross</th>
+          <th style="width: 19%;">Deductions</th>
+          <th style="width: 19%;">Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in per_platform_breakdown %}
+        <tr>
+          <td>{{ row.platform }}</td>
+          <td>{{ row.shifts_count }}</td>
+          <td>{{ row.total_gross }}</td>
+          <td>{{ row.total_deductions }}</td>
+          <td>{{ row.total_net }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h2 class="section-title">Verified Shift Records</h2>
+    <table aria-label="verified shifts table">
+      <thead>
+        <tr>
+          <th style="width: 10%;">Shift ID</th>
+          <th style="width: 14%;">Date</th>
+          <th style="width: 18%;">Platform</th>
+          <th style="width: 13%;">Hours</th>
+          <th style="width: 15%;">Gross</th>
+          <th style="width: 15%;">Deductions</th>
+          <th style="width: 15%;">Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for shift in verified_shifts %}
+        <tr>
+          <td>{{ shift.id }}</td>
+          <td>{{ shift.date }}</td>
+          <td>{{ shift.platform }}</td>
+          <td>{{ shift.hours_worked }}</td>
+          <td>{{ shift.gross_earned }}</td>
+          <td>{{ shift.deductions }}</td>
+          <td>{{ shift.net_received }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <section class="declaration" aria-label="certificate declaration">
+      {{ declaration }}
+    </section>
+
+    <footer class="footer">
+      <div>
+        <div class="signature-box">Worker Signature (optional)</div>
+      </div>
+      <div>
+        <div class="signature-box">FairGig System Generated Certificate</div>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
