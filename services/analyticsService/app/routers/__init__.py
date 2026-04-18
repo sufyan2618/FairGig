@@ -1,3 +1,3 @@
-from app.routers.order import router
+from app.routers.analytics import router
 
 __all__ = ["router"]
