@@ -13,6 +13,11 @@ export const advocateSidebarItems: SidebarItem[] = [
     icon: "wallet",
   },
   {
+    id: "advocate-vulnerability-flags",
+    label: "Vulnerability Flags",
+    icon: "team",
+  },
+  {
     id: "advocate-grievance-moderation",
     label: "Grievance Board (Moderation)",
     icon: "message",

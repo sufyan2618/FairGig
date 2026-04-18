@@ -5,6 +5,8 @@ import loginAnimation from '../animations/Login verification.json'
 
 const MOCK_EMAIL = 'demo@ecommerce.com'
 const MOCK_PASSWORD = 'demo123'
+const ADVOCATE_EMAIL = 'advocate@fairgig.com'
+const ADVOCATE_PASSWORD = 'advocate123'
 
 export const Login = () => {
 	const { View: loginAnimationView } = useLottie({
@@ -23,13 +25,26 @@ export const Login = () => {
 		event.preventDefault()
 		setError('')
 
-		if (email !== MOCK_EMAIL || password !== MOCK_PASSWORD) {
-			setError('Invalid credentials. Use demo@ecommerce.com / demo123')
+		const isWorkerLogin = email === MOCK_EMAIL && password === MOCK_PASSWORD
+		const isAdvocateLogin = email === ADVOCATE_EMAIL && password === ADVOCATE_PASSWORD
+
+		if (!isWorkerLogin && !isAdvocateLogin) {
+			setError('Invalid credentials. Use demo@ecommerce.com / demo123 or advocate@fairgig.com / advocate123')
 			return
 		}
 
+		const role = isAdvocateLogin ? 'advocate' : 'worker'
+
 		localStorage.setItem('mailflow_auth', 'true')
-		localStorage.setItem('mailflow_user', JSON.stringify({ name: 'Demo User', email: MOCK_EMAIL }))
+		localStorage.setItem('mailflow_role', role)
+		localStorage.setItem(
+			'mailflow_user',
+			JSON.stringify({
+				name: isAdvocateLogin ? 'Advocate User' : 'Demo User',
+				email,
+				role,
+			}),
+		)
 
 		if (remember) {
 			localStorage.setItem('mailflow_remember', 'true')
@@ -37,7 +52,10 @@ export const Login = () => {
 			localStorage.removeItem('mailflow_remember')
 		}
 
-		navigate('/dashboard')
+		navigate(isAdvocateLogin ? '/advocate/dashboard' : '/dashboard', {
+			replace: true,
+			state: {},
+		})
 	}
 
 	return (
