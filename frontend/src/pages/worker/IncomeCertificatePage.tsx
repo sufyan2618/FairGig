@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '../../components/common/Button'
 import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { sidebarItems } from '../../data/dashboardData'
@@ -88,6 +89,8 @@ const IncomeCertificatePage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={error} tone="error" onShown={clearError} />
+            <ToastOnMessage message={localNotice} tone="info" onShown={() => setLocalNotice(null)} />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-6">
               <div className="mb-5">
@@ -123,17 +126,6 @@ const IncomeCertificatePage = () => {
                 </Button>
               </div>
 
-              {error ? (
-                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </p>
-              ) : null}
-
-              {localNotice ? (
-                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
-                  {localNotice}
-                </p>
-              ) : null}
             </section>
 
             {html ? (

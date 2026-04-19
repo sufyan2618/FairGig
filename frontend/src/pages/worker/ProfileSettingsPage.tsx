@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '../../components/common/Button'
 import { LabeledSelectField } from '../../components/common/LabeledSelectField'
 import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { sidebarItems } from '../../data/dashboardData'
@@ -71,15 +72,6 @@ const ProfileSettingsPage = () => {
     setCity(prefs.city)
     setPrimaryCategory(prefs.primaryCategory)
   }, [prefs.city, prefs.primaryCategory])
-
-  useEffect(() => {
-    if (!notice) {
-      return
-    }
-
-    const timeout = window.setTimeout(() => clearNotice(), 2800)
-    return () => window.clearTimeout(timeout)
-  }, [clearNotice, notice])
 
   const updateNotification = (key: keyof typeof prefs.notifications) => {
     saveNotificationPrefs({
@@ -193,6 +185,8 @@ const ProfileSettingsPage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={error} tone="error" onShown={clearError} />
+            <ToastOnMessage message={notice} tone="success" onShown={clearNotice} />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-6">
               <div className="mb-5">
@@ -201,18 +195,6 @@ const ProfileSettingsPage = () => {
                   Manage account details through APIs and save local worker preferences for analytics and notifications.
                 </p>
               </div>
-
-              {error ? (
-                <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </p>
-              ) : null}
-
-              {notice ? (
-                <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                  {notice}
-                </p>
-              ) : null}
 
               <div className="grid gap-5 xl:grid-cols-2">
                 <form onSubmit={handleAccountSave} className="rounded-2xl border border-[#e3e7ef] bg-[#f8f9fb] p-4">

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Button } from '../../components/common/Button'
 import { LabeledSelectField } from '../../components/common/LabeledSelectField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { sidebarItems } from '../../data/dashboardData'
 import { useWorkerGrievanceApi } from '../../hooks/api/useWorkerGrievanceApi'
 import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
 import { classNames } from '../../utils/functions'
-import type { GrievanceStatus } from '../../types/worker'
+import type { GrievanceComplaint, GrievanceStatus } from '../../types/worker'
 
 const platformOptions = [
   { label: 'Select platform', value: '' },
@@ -60,6 +61,7 @@ const GrievanceBoardPage = () => {
   const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
   const [localNotice, setLocalNotice] = useState<string | null>(null)
+  const [pendingDeletePost, setPendingDeletePost] = useState<GrievanceComplaint | null>(null)
 
   const {
     complaints,
@@ -77,15 +79,6 @@ const GrievanceBoardPage = () => {
   useEffect(() => {
     void fetchComplaints({ page: 1, limit: 50 })
   }, [fetchComplaints])
-
-  useEffect(() => {
-    if (!notice) {
-      return
-    }
-
-    const timeout = window.setTimeout(() => clearNotice(), 2800)
-    return () => window.clearTimeout(timeout)
-  }, [clearNotice, notice])
 
   const filteredPosts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -133,23 +126,35 @@ const GrievanceBoardPage = () => {
     }
   }
 
-  const handleDelete = async (complaintId: string, status: GrievanceStatus) => {
+  const openDeleteModal = (post: GrievanceComplaint) => {
     clearError()
     clearNotice()
     setLocalNotice(null)
 
-    if (status !== 'open') {
-      setLocalNotice('Only open grievances can be deleted.')
+    if (!post.can_delete) {
+      setLocalNotice('You can delete only your own open grievances.')
       return
     }
 
-    const shouldDelete = window.confirm('Delete this grievance post?')
-    if (!shouldDelete) {
+    setPendingDeletePost(post)
+  }
+
+  const closeDeleteModal = () => {
+    if (isSubmitting) {
+      return
+    }
+
+    setPendingDeletePost(null)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!pendingDeletePost) {
       return
     }
 
     try {
-      await deleteComplaint(complaintId)
+      await deleteComplaint(pendingDeletePost.id)
+      setPendingDeletePost(null)
     } catch {
       return
     }
@@ -170,6 +175,9 @@ const GrievanceBoardPage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={error} tone="error" onShown={clearError} />
+            <ToastOnMessage message={notice} tone="success" onShown={clearNotice} />
+            <ToastOnMessage message={localNotice} tone="warning" onShown={() => setLocalNotice(null)} />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-6">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -226,23 +234,6 @@ const GrievanceBoardPage = () => {
                 </div>
               </form>
 
-              {error ? (
-                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </p>
-              ) : null}
-
-              {notice ? (
-                <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                  {notice}
-                </p>
-              ) : null}
-
-              {localNotice ? (
-                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  {localNotice}
-                </p>
-              ) : null}
             </section>
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
@@ -280,14 +271,16 @@ const GrievanceBoardPage = () => {
                         >
                           {post.escalation_status}
                         </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={isSubmitting}
-                          onClick={() => void handleDelete(post.id, post.escalation_status)}
-                        >
-                          Delete
-                        </Button>
+                        {post.can_delete ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={isSubmitting}
+                            onClick={() => openDeleteModal(post)}
+                          >
+                            Delete
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
 
@@ -308,6 +301,45 @@ const GrievanceBoardPage = () => {
               ) : null}
             </section>
           </div>
+
+          {pendingDeletePost ? (
+            <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+              <button
+                type="button"
+                className="absolute inset-0 bg-[#101828]/45"
+                onClick={closeDeleteModal}
+                aria-label="Close delete confirmation"
+              />
+
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-grievance-title"
+                className="relative z-10 w-full max-w-md rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.22)]"
+              >
+                <h4 id="delete-grievance-title" className="text-lg font-semibold text-[#1d1d1d]">
+                  Delete this grievance post?
+                </h4>
+                <p className="mt-2 text-sm leading-6 text-[#475467]">
+                  This action cannot be undone. The post will be permanently removed from the
+                  community board.
+                </p>
+
+                <div className="mt-5 flex items-center justify-end gap-2">
+                  <Button variant="ghost" disabled={isSubmitting} onClick={closeDeleteModal}>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-rose-600 text-white hover:bg-rose-700"
+                    disabled={isSubmitting}
+                    onClick={() => void handleDeleteConfirm()}
+                  >
+                    {isSubmitting ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </main>
       </div>
     </div>

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../../components/common/Button'
+import { EarningsAiChatWidget } from '../../components/common/EarningsAiChatWidget'
 import { LabeledSelectField } from '../../components/common/LabeledSelectField'
 import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { sidebarItems } from '../../data/dashboardData'
@@ -10,7 +12,9 @@ import { useWorkerEarningsApi } from '../../hooks/api/useWorkerEarningsApi'
 import { useWorkerProfileApi } from '../../hooks/api/useWorkerProfileApi'
 import { useSidebarNavigation } from '../../hooks/useSidebarNavigation'
 import { formatCurrency, formatPercentage } from '../../utils/functions'
+import { anomalyApi } from '../../api/anomalyApi'
 import type { WorkerShift } from '../../types/worker'
+import type { ChatAnomalyFlag, ShiftSummary } from '../../types/anomaly'
 
 type Timeframe = 'weekly' | 'monthly'
 
@@ -25,6 +29,53 @@ const timeframeOptions = [
   { label: 'Weekly', value: 'weekly' },
   { label: 'Monthly', value: 'monthly' },
 ]
+
+const defaultCategoryValues = [
+  'ride_hailing',
+  'food_delivery',
+  'courier',
+  'grocery_delivery',
+  'multi_platform',
+  'other',
+]
+
+const defaultCityZoneValues = [
+  'Karachi',
+  'Lahore',
+  'Islamabad',
+  'Rawalpindi',
+  'Peshawar',
+  'Quetta',
+  'Other',
+]
+
+const normalizeComparable = (value: string): string => value.trim().toLowerCase()
+
+const buildSelectOptions = (
+  values: Array<string | null | undefined>,
+  placeholderLabel: string,
+): Array<{ label: string; value: string }> => {
+  const unique = new Map<string, string>()
+
+  for (const raw of values) {
+    const trimmed = raw?.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    const normalized = normalizeComparable(trimmed)
+    if (!unique.has(normalized)) {
+      unique.set(normalized, trimmed)
+    }
+  }
+
+  return [
+    { label: placeholderLabel, value: '' },
+    ...[...unique.values()]
+      .sort((first, second) => first.localeCompare(second))
+      .map((value) => ({ label: value, value })),
+  ]
+}
 
 const toMonthLabel = (dateString: string): string => {
   const parsed = new Date(`${dateString}T00:00:00Z`)
@@ -104,12 +155,14 @@ const MyAnalyticsPage = () => {
     return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
   })
   const [localNotice, setLocalNotice] = useState<string | null>(null)
+  const [chatAnomalies, setChatAnomalies] = useState<ChatAnomalyFlag[]>([])
 
   const {
     shifts,
     isLoading: isShiftsLoading,
     error: shiftsError,
     fetchShifts,
+    clearError: clearShiftsError,
   } = useWorkerEarningsApi()
 
   const {
@@ -162,6 +215,32 @@ const MyAnalyticsPage = () => {
     }
   }, [shifts])
 
+  const medianCategoryOptions = useMemo(
+    () =>
+      buildSelectOptions(
+        [
+          ...defaultCategoryValues,
+          prefs.primaryCategory,
+          ...shifts.map((shift) => shift.worker_category),
+        ],
+        'Select category',
+      ),
+    [prefs.primaryCategory, shifts],
+  )
+
+  const medianCityZoneOptions = useMemo(
+    () =>
+      buildSelectOptions(
+        [
+          ...defaultCityZoneValues,
+          prefs.city,
+          ...shifts.map((shift) => shift.city_zone),
+        ],
+        'Select city zone',
+      ),
+    [prefs.city, shifts],
+  )
+
   const medianComparison = useMemo(() => {
     if (!workerMedian || workerMedian.median_net_earned_pkr === null) {
       return null
@@ -209,9 +288,106 @@ const MyAnalyticsPage = () => {
     }))
   }, [shifts])
 
+  const earningsSummary = useMemo<ShiftSummary>(() => {
+    if (shifts.length === 0) {
+      const nowIso = new Date().toISOString().slice(0, 10)
+      return {
+        total_shifts: 0,
+        total_gross_pkr: 0,
+        total_net_pkr: 0,
+        avg_monthly_net_pkr: 0,
+        platforms_worked: [],
+        date_from: nowIso,
+        date_to: nowIso,
+      }
+    }
+
+    const totalGross = shifts.reduce((sum, shift) => sum + shift.gross_earned, 0)
+    const totalNet = shifts.reduce((sum, shift) => sum + shift.net_received, 0)
+    const platforms = Array.from(new Set(shifts.map((shift) => shift.platform))).sort((a, b) =>
+      a.localeCompare(b),
+    )
+    const sortedDates = shifts.map((shift) => shift.date).sort((a, b) => a.localeCompare(b))
+    const dateFrom = sortedDates[0] ?? new Date().toISOString().slice(0, 10)
+    const dateTo = sortedDates.at(-1) ?? dateFrom
+
+    const monthlyTotals = new Map<string, number>()
+    for (const shift of shifts) {
+      const month = shift.date.slice(0, 7)
+      monthlyTotals.set(month, (monthlyTotals.get(month) ?? 0) + shift.net_received)
+    }
+
+    const avgMonthlyNet =
+      monthlyTotals.size > 0
+        ? Math.round(
+            [...monthlyTotals.values()].reduce((sum, monthTotal) => sum + monthTotal, 0) /
+              monthlyTotals.size,
+          )
+        : 0
+
+    return {
+      total_shifts: shifts.length,
+      total_gross_pkr: totalGross,
+      total_net_pkr: totalNet,
+      avg_monthly_net_pkr: avgMonthlyNet,
+      platforms_worked: platforms,
+      date_from: dateFrom,
+      date_to: dateTo,
+    }
+  }, [shifts])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadAnomalies = async () => {
+      if (shifts.length === 0) {
+        setChatAnomalies([])
+        return
+      }
+
+      try {
+        const response = await anomalyApi.detect({
+          worker_id: shifts[0]?.worker_id,
+          shifts: shifts.slice(0, 30).map((shift) => ({
+            shift_id: shift.id,
+            date: shift.date,
+            platform: shift.platform,
+            hours_worked: shift.hours_worked,
+            gross_earned: shift.gross_earned,
+            platform_deductions: shift.deductions,
+            net_received: shift.net_received,
+          })),
+        })
+
+        if (!isCancelled) {
+          setChatAnomalies(
+            response.anomalies.map((anomaly) => ({
+              date: anomaly.date,
+              platform: anomaly.platform,
+              anomaly_type: anomaly.anomaly_type,
+              severity: anomaly.severity,
+              explanation: anomaly.explanation,
+            })),
+          )
+        }
+      } catch {
+        if (!isCancelled) {
+          setChatAnomalies([])
+        }
+      }
+    }
+
+    void loadAnomalies()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [shifts])
+
   const refreshAll = async () => {
     setLocalNotice(null)
     clearError()
+    clearShiftsError()
 
     await fetchShifts({ page: 1, limit: 200 })
 
@@ -223,6 +399,7 @@ const MyAnalyticsPage = () => {
   const loadMedian = async () => {
     setLocalNotice(null)
     clearError()
+    clearShiftsError()
 
     if (!medianCategory || !medianCityZone) {
       setLocalNotice('Category and city zone are required for median comparison.')
@@ -247,6 +424,9 @@ const MyAnalyticsPage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={shiftsError} tone="error" onShown={clearShiftsError} />
+            <ToastOnMessage message={analyticsError} tone="error" onShown={clearError} />
+            <ToastOnMessage message={localNotice} tone="warning" onShown={() => setLocalNotice(null)} />
 
             <section className="animate-fade-up grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <article className="rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_8px_25px_rgba(16,24,40,0.05)]">
@@ -269,20 +449,6 @@ const MyAnalyticsPage = () => {
                 <p className="mt-1 text-3xl font-bold text-[#1d1d1d]">{overallTotals.verifiedCount}</p>
               </article>
             </section>
-
-            {(shiftsError || analyticsError || localNotice) ? (
-              <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
-                {shiftsError ? (
-                  <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{shiftsError}</p>
-                ) : null}
-                {analyticsError ? (
-                  <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{analyticsError}</p>
-                ) : null}
-                {localNotice ? (
-                  <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">{localNotice}</p>
-                ) : null}
-              </section>
-            ) : null}
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -380,17 +546,17 @@ const MyAnalyticsPage = () => {
               <h3 className="mb-4 text-lg font-semibold text-[#1d1d1d]">City-wide Median Comparison</h3>
 
               <div className="grid gap-3 md:grid-cols-4">
-                <LabeledTextField
+                <LabeledSelectField
                   label="Category"
+                  options={medianCategoryOptions}
                   value={medianCategory}
                   onChange={setMedianCategory}
-                  placeholder="e.g. ride_hailing"
                 />
-                <LabeledTextField
+                <LabeledSelectField
                   label="City Zone"
+                  options={medianCityZoneOptions}
                   value={medianCityZone}
                   onChange={setMedianCityZone}
-                  placeholder="e.g. Lahore"
                 />
                 <LabeledTextField
                   label="Month"
@@ -441,6 +607,7 @@ const MyAnalyticsPage = () => {
           </div>
         </main>
       </div>
+      <EarningsAiChatWidget earningsSummary={earningsSummary} anomalies={chatAnomalies} disabled={isShiftsLoading} />
     </div>
   )
 }

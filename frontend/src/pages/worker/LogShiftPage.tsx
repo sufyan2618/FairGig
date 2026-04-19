@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { Button } from '../../components/common/Button'
 import { LabeledSelectField } from '../../components/common/LabeledSelectField'
 import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { sidebarItems } from '../../data/dashboardData'
@@ -223,6 +224,9 @@ const LogShiftPage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={manualNotice} tone="warning" onShown={() => setManualNotice(null)} />
+            <ToastOnMessage message={error} tone="error" onShown={clearError} />
+            <ToastOnMessage message={notice} tone="success" onShown={clearNotice} />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-6">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -249,6 +253,11 @@ const LogShiftPage = () => {
                   />
                 </div>
               </div>
+
+              <p className="mb-4 text-xs text-[#667085]">
+                CSV date accepted: YYYY-MM-DD (recommended), DD/MM/YYYY, DD-MM-YYYY, DD/MM/YY, DD-MM-YY.
+                Examples: 2026-12-22, 22/12/2026, 22-3-26.
+              </p>
 
               <form className="grid gap-4 md:grid-cols-2" onSubmit={handleManualSubmit}>
                 <LabeledSelectField
@@ -381,23 +390,6 @@ const LogShiftPage = () => {
                 </p>
               ) : null}
 
-              {manualNotice ? (
-                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  {manualNotice}
-                </p>
-              ) : null}
-
-              {error ? (
-                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </p>
-              ) : null}
-
-              {notice ? (
-                <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                  {notice}
-                </p>
-              ) : null}
             </section>
           </div>
         </main>

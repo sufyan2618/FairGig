@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
+import { ToastViewport } from './components/common/ToastViewport.tsx'
 import { Login } from './pages/Login.tsx'
 import { Signup } from './pages/Signup.tsx'
 import { VerifyEmailOtp } from './pages/VerifyEmailOtp.tsx'
@@ -27,6 +28,7 @@ import GrievanceBoardPage from './pages/worker/GrievanceBoardPage.tsx'
 import ProfileSettingsPage from './pages/worker/ProfileSettingsPage.tsx'
 import UploadScreenshotPage from './pages/worker/UploadScreenshotPage.tsx'
 import { useAuthStore } from './store/authStore'
+import { useToastStore } from './store/toastStore'
 import { getHomeRouteForRole } from './utils/auth'
 import type { UserRole } from './types/auth'
 
@@ -37,9 +39,9 @@ interface ToastState {
 
 const RouteToast = () => {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+	const showToast = useToastStore((state) => state.showToast)
 	const location = useLocation()
 	const navigate = useNavigate()
-	const [toast, setToast] = useState<ToastState | null>(null)
 
 	useEffect(() => {
 		const state = location.state as { toast?: ToastState } | null
@@ -53,36 +55,14 @@ const RouteToast = () => {
 			return
 		}
 
-		setToast(state.toast)
+		showToast({
+			message: state.toast.message,
+			tone: state.toast.tone,
+		})
 		navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
-	}, [isAuthenticated, location.hash, location.pathname, location.search, location.state, navigate])
+	}, [isAuthenticated, location.hash, location.pathname, location.search, location.state, navigate, showToast])
 
-	useEffect(() => {
-		if (!toast) {
-			return
-		}
-
-		const timeout = window.setTimeout(() => setToast(null), 2800)
-		return () => window.clearTimeout(timeout)
-	}, [toast])
-
-	if (!toast) {
-		return null
-	}
-
-	return (
-		<div className="pointer-events-none fixed right-4 top-4 z-60">
-			<div
-				className={
-					toast.tone === 'success'
-						? 'rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 shadow-lg'
-						: 'rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-800 shadow-lg'
-				}
-			>
-				{toast.message}
-			</div>
-		</div>
-	)
+	return null
 }
 
 interface ProtectedRouteProps {
@@ -183,6 +163,7 @@ const FallbackRedirect = () => {
 const AppRoutes = () => (
 	<>
 		<RouteToast />
+		<ToastViewport />
 		<Routes>
 			<Route
 				path="/login"

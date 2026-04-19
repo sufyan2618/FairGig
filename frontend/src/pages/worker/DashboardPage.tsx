@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/common/Button'
 import { Icon } from '../../components/common/Icon'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { sidebarItems } from '../../data/dashboardData'
@@ -28,12 +29,14 @@ const DashboardPage = () => {
     isLoading: isShiftsLoading,
     error: shiftsError,
     fetchShifts,
+    clearError: clearShiftsError,
   } = useWorkerEarningsApi()
 
   const {
     complaints,
     error: complaintsError,
     fetchComplaints,
+    clearError: clearComplaintsError,
   } = useWorkerGrievanceApi()
 
   useEffect(() => {
@@ -129,8 +132,6 @@ const DashboardPage = () => {
     },
   ]
 
-  const hasError = shiftsError || complaintsError
-
   return (
     <div className="min-h-screen bg-[#eceef2] text-[#1d1d1d]">
       <div className="flex min-h-screen flex-col lg:flex-row">
@@ -149,6 +150,8 @@ const DashboardPage = () => {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
             />
+            <ToastOnMessage message={shiftsError} tone="error" onShown={clearShiftsError} />
+            <ToastOnMessage message={complaintsError} tone="error" onShown={clearComplaintsError} />
 
             <section className="animate-fade-up grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {dashboardCards.map((card, index) => (
@@ -205,12 +208,6 @@ const DashboardPage = () => {
                   {isShiftsLoading ? 'Refreshing...' : 'Refresh'}
                 </Button>
               </div>
-
-              {hasError ? (
-                <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {shiftsError || complaintsError}
-                </p>
-              ) : null}
 
               <div className="overflow-x-auto">
                 <table className="min-w-full border-separate border-spacing-y-2 text-sm">
