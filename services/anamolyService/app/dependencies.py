@@ -48,3 +48,18 @@ def get_request_principal(
 
 
 PrincipalDep = Annotated[CurrentPrincipal, Depends(get_request_principal)]
+
+
+def require_worker_principal(
+	principal: PrincipalDep,
+) -> CurrentPrincipal:
+	if principal.auth_mode != "bearer" or principal.role != "worker" or not principal.subject:
+		raise HTTPException(
+			status_code=status.HTTP_403_FORBIDDEN,
+			detail="Only authenticated workers can access this endpoint.",
+		)
+
+	return principal
+
+
+WorkerPrincipalDep = Annotated[CurrentPrincipal, Depends(require_worker_principal)]

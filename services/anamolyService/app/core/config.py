@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_SECRET: str = Field(default="")
     JWT_ALGORITHM: str = Field(default="HS256")
+    OPENAI_API_KEY: str = Field(default="")
+    OPENAI_MODEL: str = Field(default="gpt-4o-mini")
+    OPENAI_TIMEOUT_SECONDS: float = Field(default=20.0)
     INTERNAL_SERVICE_API_KEY: str = Field(default="fairgig-internal-dev-key")
     ALLOW_OPEN_DETECT: bool = Field(default=False)
 

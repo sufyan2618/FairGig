@@ -88,6 +88,7 @@ export interface GrievanceComplaint {
   cluster_label: string | null
   escalation_status: GrievanceStatus
   moderation_note: string | null
+  can_delete?: boolean
   is_anonymous: boolean
   created_at: string
   updated_at: string
