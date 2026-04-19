@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../../components/common/Button'
 import { LabeledSelectField } from '../../components/common/LabeledSelectField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { advocateSidebarItems } from '../../data/advocateData'
@@ -102,15 +103,6 @@ const GrievanceModerationPage = () => {
       cluster_id: clusterFilter === 'all' ? undefined : clusterFilter,
     })
   }, [categoryFilter, clusterFilter, fetchComplaints, platformFilter, statusFilter, tagFilter])
-
-  useEffect(() => {
-    if (!notice) {
-      return
-    }
-
-    const timeout = window.setTimeout(() => clearNotice(), 2600)
-    return () => window.clearTimeout(timeout)
-  }, [clearNotice, notice])
 
   const filteredPosts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -297,6 +289,9 @@ const GrievanceModerationPage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={error} tone="error" onShown={clearError} />
+            <ToastOnMessage message={notice} tone="success" onShown={clearNotice} />
+            <ToastOnMessage message={localNotice} tone="info" onShown={() => setLocalNotice('')} />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-6">
               <h2 className="text-2xl font-semibold text-[#1d1d1d]">Grievance Board (Moderation View)</h2>
@@ -337,23 +332,6 @@ const GrievanceModerationPage = () => {
                 />
               </div>
 
-              {error ? (
-                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </p>
-              ) : null}
-
-              {notice ? (
-                <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                  {notice}
-                </p>
-              ) : null}
-
-              {localNotice ? (
-                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  {localNotice}
-                </p>
-              ) : null}
             </section>
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-4 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-5">

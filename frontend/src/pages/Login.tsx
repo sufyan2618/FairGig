@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useLottie } from 'lottie-react'
 import loginAnimation from '../animations/Login verification.json'
 import logo from '../assets/logo.jpeg'
+import { ToastOnMessage } from '../components/common/ToastOnMessage'
 import { useAuthApi } from '../hooks/api/useAuthApi'
 import { getHomeRouteForRole } from '../utils/auth'
 
@@ -56,21 +57,6 @@ export const Login = () => {
 						Track verified earnings, detect unusual deductions, and keep your livelihood records organized in one
 						place.
 					</p>
-
-					<div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1D1D1D] px-3 py-1.5 text-white" aria-hidden="true">
-						<div className="-space-x-2">
-							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#FF914D] text-xs font-semibold">
-								J
-							</span>
-							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#F9703E] text-xs font-semibold">
-								A
-							</span>
-							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#E85D2F] text-xs font-semibold">
-								M
-							</span>
-						</div>
-						<small className="text-xs text-white/90 sm:text-sm">Built for workers, verifiers, and advocates</small>
-					</div>
 				</section>
 
 				<section
@@ -88,6 +74,8 @@ export const Login = () => {
 					<p className="mt-1.5 text-center text-sm text-[#1D1D1D]/70">Sign in to continue to your FairGig dashboard.</p>
 
 					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5">
+						<ToastOnMessage message={error} tone="error" onShown={clearError} />
+
 						<div className="space-y-2">
 							<label className="text-sm font-medium" htmlFor="email">
 								Email address
@@ -136,8 +124,6 @@ export const Login = () => {
 							/>
 							<span>Remember me for 30 days</span>
 						</label>
-
-						{error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
 
 						<button
 							type="submit"

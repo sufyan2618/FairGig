@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLottie } from 'lottie-react'
 import forgotAnimation from '../animations/Login verification.json'
 import logo from '../assets/logo.jpeg'
+import { ToastOnMessage } from '../components/common/ToastOnMessage'
 import { useAuthApi } from '../hooks/api/useAuthApi'
 
 export const ForgotPassword = () => {
@@ -84,6 +85,9 @@ export const ForgotPassword = () => {
 					<p className="mt-1.5 text-sm text-[#1D1D1D]/70">Request a one-time OTP for password reset.</p>
 
 					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5">
+						<ToastOnMessage message={error} tone="error" onShown={clearError} />
+						<ToastOnMessage message={notice} tone="success" onShown={() => setNotice('')} />
+
 						<div className="space-y-2">
 							<label className="text-sm font-medium" htmlFor="email">
 								Email address
@@ -99,9 +103,6 @@ export const ForgotPassword = () => {
 								className="w-full rounded-xl border border-[#1D1D1D]/15 bg-[#FFFCFA] px-3.5 py-2 text-sm outline-none ring-[#FF914D] transition focus:border-[#FF914D] focus:ring-2"
 							/>
 						</div>
-
-						{error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
-						{notice ? <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p> : null}
 
 						<button
 							type="submit"

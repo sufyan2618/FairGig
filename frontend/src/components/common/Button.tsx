@@ -33,7 +33,7 @@ export const Button = ({
     type={type}
     className={classNames(
       "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-button)]/35",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-button)/35",
       variantClassMap[variant],
       sizeClassMap[size],
       className,

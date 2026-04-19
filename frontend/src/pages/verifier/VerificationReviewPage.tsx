@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/common/Button'
 import { Icon } from '../../components/common/Icon'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { useVerifierVerificationApi } from '../../hooks/api/useVerifierVerificationApi'
 import { useVerifierSidebarNavigation } from '../../hooks/useVerifierSidebarNavigation'
 import { classNames, formatCurrency, formatHours } from '../../utils/functions'
 import type { VerificationDecisionStatus } from '../../types/verifier'
+import logo from '../../assets/logo.jpeg'
 
 const formatDateTime = (isoDateTime: string): string => {
   const date = new Date(isoDateTime)
@@ -91,8 +93,8 @@ const VerificationReviewPage = () => {
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className="w-full bg-[#232429] text-white lg:min-h-screen lg:w-72">
           <div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
-              <span className="text-lg font-bold text-(--color-button)">FG</span>
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-linear-to-br from-[#141518] to-[#2f3239] ring-1 ring-white/10">
+              <img src={logo} alt="FairGig logo" className="h-full w-full object-cover scale-110" />
             </div>
             <div>
               <p className="text-sm font-semibold">FairGig</p>
@@ -136,6 +138,8 @@ const VerificationReviewPage = () => {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
             />
+            <ToastOnMessage message={error} tone="error" onShown={clearError} />
+            <ToastOnMessage message={notice} tone="warning" onShown={() => setNotice('')} />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)] md:p-6">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -151,12 +155,6 @@ const VerificationReviewPage = () => {
               {isSubmissionLoading ? (
                 <div className="rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-4 py-3 text-sm text-[#425066]">
                   Loading submission details...
-                </div>
-              ) : null}
-
-              {error ? (
-                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {error}
                 </div>
               ) : null}
 
@@ -237,11 +235,6 @@ const VerificationReviewPage = () => {
                 </div>
               )}
 
-              {notice ? (
-                <p className="mt-4 rounded-xl border border-[#e1e4eb] bg-[#f7f8fa] px-3 py-2 text-sm text-[#425066]">
-                  {notice}
-                </p>
-              ) : null}
             </section>
           </div>
         </main>

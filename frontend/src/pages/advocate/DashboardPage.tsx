@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { advocateSidebarItems } from '../../data/advocateData'
@@ -181,6 +182,7 @@ const AdvocateDashboardPage = () => {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
             />
+            <ToastOnMessage message={combinedError} tone="error" />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
               <h2 className="text-2xl font-semibold text-[#1d1d1d]">Advocate Home</h2>
@@ -188,12 +190,6 @@ const AdvocateDashboardPage = () => {
                 Live overview of worker activity, verified earnings, and grievance pressure points.
               </p>
             </section>
-
-            {combinedError ? (
-              <section className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {combinedError}
-              </section>
-            ) : null}
 
             <section className="animate-fade-up grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {quickStats.map((kpi, index) => (

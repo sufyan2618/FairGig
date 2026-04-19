@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useLottie } from 'lottie-react'
 import signupAnimation from '../animations/Login verification.json'
 import logo from '../assets/logo.jpeg'
+import { ToastOnMessage } from '../components/common/ToastOnMessage'
 import { useAuthApi } from '../hooks/api/useAuthApi'
 import type { UserRole } from '../types/auth'
 
@@ -19,12 +20,10 @@ export const Signup = () => {
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
 	const [role, setRole] = useState<UserRole>('worker')
-	const [message, setMessage] = useState('')
 
 	const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
 		clearError()
-		setMessage('')
 
 		const normalizedEmail = email.trim().toLowerCase()
 
@@ -35,8 +34,6 @@ export const Signup = () => {
 				password,
 				role,
 			})
-
-			setMessage(response.message)
 
 			navigate(`/verify-email-otp?email=${encodeURIComponent(normalizedEmail)}`, {
 				replace: true,
@@ -60,7 +57,7 @@ export const Signup = () => {
 			<div className="auth-content relative mx-auto grid w-full max-w-4xl grid-cols-1 items-start gap-2.5 px-3 py-2 sm:px-4 md:grid-cols-2 md:items-stretch md:gap-2.5 lg:gap-3 lg:py-2">
 				<section
 					aria-label="Onboarding preview"
-					className="flex flex-col rounded-3xl border border-[#FF914D]/20 bg-white/80 p-3 shadow-xl shadow-[#FF914D]/10 backdrop-blur-sm sm:p-3.5"
+					className="flex flex-col items-center rounded-3xl border border-[#FF914D]/20 bg-white/80 p-3 text-center shadow-xl shadow-[#FF914D]/10 backdrop-blur-sm sm:p-3.5"
 				>
 					<div className="mb-2 flex min-h-32 items-center justify-center overflow-hidden rounded-2xl bg-[#FFF9F4] p-1.5 sm:min-h-40 sm:p-2 md:min-h-48 [&>div]:h-full [&>div]:w-full">
 						{signupAnimationView}
@@ -71,28 +68,13 @@ export const Signup = () => {
 						Create your FairGig account to track earnings, submit evidence, and collaborate across worker support
 						roles.
 					</p>
-
-					<div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1D1D1D] px-3 py-1.5 text-white" aria-hidden="true">
-						<div className="-space-x-2">
-							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#FF914D] text-xs font-semibold">
-								N
-							</span>
-							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#F9703E] text-xs font-semibold">
-								K
-							</span>
-							<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-[#E85D2F] text-xs font-semibold">
-								R
-							</span>
-						</div>
-						<small className="text-xs text-white/90 sm:text-sm">Secure onboarding with OTP verification</small>
-					</div>
 				</section>
 
 				<section
 					aria-label="Signup form"
-					className="flex flex-col justify-center rounded-3xl border border-[#1D1D1D]/10 bg-white p-3 shadow-xl shadow-[#1D1D1D]/5 sm:p-3.5"
+					className="flex flex-col justify-center rounded-3xl border border-[#1D1D1D]/10 bg-white p-3 text-center shadow-xl shadow-[#1D1D1D]/5 sm:p-3.5"
 				>
-					<div className="mb-2.5 flex items-center gap-2.5">
+					<div className="mb-2.5 flex items-center justify-center gap-2.5">
 						<span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#1D1D1D]/10 bg-white">
 							<img src={logo} alt="FairGig logo" className="h-full w-full object-cover" />
 						</span>
@@ -102,9 +84,10 @@ export const Signup = () => {
 					<h1 className="text-lg font-black tracking-tight sm:text-xl">Create account</h1>
 					<p className="mt-1.5 text-sm text-[#1D1D1D]/70">Set up your account. We will send a verification OTP to your email.</p>
 
-					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5">
+					<form onSubmit={onSubmit} className="mt-3.5 space-y-2.5 text-left">
+						<ToastOnMessage message={error} tone="error" onShown={clearError} />
 						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="fullName">
+							<label className="block text-sm font-medium" htmlFor="fullName">
 								Full name
 							</label>
 							<input
@@ -120,7 +103,7 @@ export const Signup = () => {
 						</div>
 
 						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="email">
+							<label className="block text-sm font-medium" htmlFor="email">
 								Email address
 							</label>
 							<input
@@ -136,7 +119,7 @@ export const Signup = () => {
 						</div>
 
 						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="password">
+							<label className="block text-sm font-medium" htmlFor="password">
 								Password
 							</label>
 							<input
@@ -152,7 +135,7 @@ export const Signup = () => {
 						</div>
 
 						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="role">
+							<label className="block text-sm font-medium" htmlFor="role">
 								Role
 							</label>
 							<select
@@ -167,10 +150,6 @@ export const Signup = () => {
 							</select>
 						</div>
 
-						{error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
-
-						{message ? <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
-
 						<button
 							type="submit"
 							disabled={isLoading}
@@ -180,7 +159,7 @@ export const Signup = () => {
 						</button>
 					</form>
 
-					<p className="mt-2.5 text-sm text-[#1D1D1D]/75">
+					<p className="mt-2.5 flex items-center justify-center gap-1 text-sm text-[#1D1D1D]/75">
 						Already have an account?{' '}
 						<Link to="/login" className="font-semibold text-[#FF914D] hover:underline">
 							Sign in

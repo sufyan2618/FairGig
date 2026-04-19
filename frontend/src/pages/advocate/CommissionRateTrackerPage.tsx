@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { LabeledSelectField } from '../../components/common/LabeledSelectField'
 import { LabeledTextField } from '../../components/common/LabeledTextField'
+import { ToastOnMessage } from '../../components/common/ToastOnMessage'
 import { Sidebar } from '../../components/layout/Sidebar'
 import { TopHeader } from '../../components/layout/TopHeader'
 import { advocateSidebarItems } from '../../data/advocateData'
@@ -168,6 +169,7 @@ const CommissionRateTrackerPage = () => {
 
           <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
             <TopHeader searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+            <ToastOnMessage message={error} tone="error" />
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
               <h2 className="text-2xl font-semibold text-[#1d1d1d]">Commission Rate Tracker</h2>
@@ -202,11 +204,6 @@ const CommissionRateTrackerPage = () => {
                 />
               </div>
 
-              {error ? (
-                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </p>
-              ) : null}
             </section>
 
             <section className="animate-fade-up rounded-2xl border border-[#dde2ea] bg-white p-5 shadow-[0_10px_24px_rgba(16,24,40,0.05)]">
