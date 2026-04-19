@@ -52,7 +52,7 @@ export const advocateGrievanceApi = {
     const response = await authenticatedRequest<AdvocateComplaintListResponse>(
       {
         method: 'GET',
-        url: `${GRIEVANCE_PREFIX}`,
+        url: `${GRIEVANCE_PREFIX}/`,
         params: removeEmptyParams({
           page: params.page,
           limit: params.limit,

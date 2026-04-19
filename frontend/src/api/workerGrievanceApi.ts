@@ -33,7 +33,7 @@ export const workerGrievanceApi = {
     const response = await authenticatedRequest<GrievanceListResponse>(
       {
         method: 'GET',
-        url: `${GRIEVANCE_PREFIX}`,
+        url: `${GRIEVANCE_PREFIX}/`,
         params: removeEmptyParams(params),
       },
       'Unable to load grievances right now.',
