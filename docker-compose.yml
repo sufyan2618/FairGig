@@ -230,6 +230,15 @@ services:
         condition: service_started
       certificate-service:
         condition: service_started
+    environment:
+      GATEWAY_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8000
+      AUTH_INTROSPECT_URL: http://auth-service:8000/api/auth/introspect
+      EARNINGS_SERVICE_URL: http://earnings-service:3001
+      ANALYTICS_SERVICE_URL: http://analytics-service:8003
+      ANOMALY_SERVICE_URL: http://anomaly-service:8002
+      GRIEVANCE_SERVICE_URL: http://grievance-service:3002
+      CERTIFICATE_SERVICE_URL: http://certificate-service:8004
     ports:
       - "8080:8080"
     networks:

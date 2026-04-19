@@ -1,7 +1,9 @@
-FROM nginx:1.27-alpine
+FROM node:20-alpine
 
-COPY nginx.conf /etc/nginx/nginx.conf
+WORKDIR /app
+
+COPY dev-gateway.mjs ./dev-gateway.mjs
 
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "dev-gateway.mjs"]

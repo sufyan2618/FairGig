@@ -2,15 +2,21 @@ import { createServer } from "node:http";
 import { Buffer } from "node:buffer";
 
 const PORT = Number(process.env.GATEWAY_PORT || 8080);
-const INTROSPECT_URL = process.env.AUTH_INTROSPECT_URL || "http://127.0.0.1:8000/api/auth/introspect";
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://127.0.0.1:8000";
+const EARNINGS_SERVICE_URL = process.env.EARNINGS_SERVICE_URL || "http://127.0.0.1:3001";
+const ANALYTICS_SERVICE_URL = process.env.ANALYTICS_SERVICE_URL || "http://127.0.0.1:8003";
+const ANOMALY_SERVICE_URL = process.env.ANOMALY_SERVICE_URL || "http://127.0.0.1:8002";
+const GRIEVANCE_SERVICE_URL = process.env.GRIEVANCE_SERVICE_URL || "http://127.0.0.1:3002";
+const CERTIFICATE_SERVICE_URL = process.env.CERTIFICATE_SERVICE_URL || "http://127.0.0.1:8004";
+const INTROSPECT_URL = process.env.AUTH_INTROSPECT_URL || `${AUTH_SERVICE_URL}/api/auth/introspect`;
 
 const ROUTES = [
-  { prefix: "/api/auth/", target: "http://127.0.0.1:8000", requiresAuth: false },
-  { prefix: "/api/earnings/", target: "http://127.0.0.1:3001", requiresAuth: true },
-  { prefix: "/api/analytics/", target: "http://127.0.0.1:8003", requiresAuth: true },
-  { prefix: "/api/anomaly/", target: "http://127.0.0.1:8002", requiresAuth: true },
-  { prefix: "/api/grievances/", target: "http://127.0.0.1:3002", requiresAuth: true },
-  { prefix: "/api/certificate/", target: "http://127.0.0.1:8004", requiresAuth: true },
+  { prefix: "/api/auth/", target: AUTH_SERVICE_URL, requiresAuth: false },
+  { prefix: "/api/earnings/", target: EARNINGS_SERVICE_URL, requiresAuth: true },
+  { prefix: "/api/analytics/", target: ANALYTICS_SERVICE_URL, requiresAuth: true },
+  { prefix: "/api/anomaly/", target: ANOMALY_SERVICE_URL, requiresAuth: true },
+  { prefix: "/api/grievances/", target: GRIEVANCE_SERVICE_URL, requiresAuth: true },
+  { prefix: "/api/certificate/", target: CERTIFICATE_SERVICE_URL, requiresAuth: true },
 ];
 
 const FORWARDED_USER_HEADERS = ["x-user-id", "x-user-role", "x-user-email", "x-user-status"];
