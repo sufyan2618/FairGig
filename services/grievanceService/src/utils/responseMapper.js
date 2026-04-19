@@ -1,22 +1,39 @@
 import { PUBLIC_POSTED_BY } from "../config/constants.js";
 
-export const toPublicComplaint = (docOrObj) => {
-  const grievance = typeof docOrObj.toJSON === "function" ? docOrObj.toJSON() : docOrObj;
+export const toPublicComplaint = (docOrObj, { viewerUserId = null } = {}) => {
+  const grievance =
+    typeof docOrObj.toObject === "function"
+      ? docOrObj.toObject()
+      : typeof docOrObj.toJSON === "function"
+      ? docOrObj.toJSON()
+      : docOrObj;
+
+  const grievanceId = grievance.id ?? grievance._id?.toString?.() ?? grievance._id;
+  const workerId = grievance.workerId ?? grievance.worker_id ?? null;
+  const isOwner =
+    viewerUserId !== null &&
+    viewerUserId !== undefined &&
+    workerId !== null &&
+    workerId !== undefined &&
+    String(workerId) === String(viewerUserId);
+  const escalationStatus = grievance.escalationStatus ?? grievance.escalation_status;
+  const clusterId = grievance.clusterId ?? grievance.cluster_id ?? null;
 
   return {
-    id: grievance.id,
+    id: grievanceId,
     posted_by: PUBLIC_POSTED_BY,
     platform: grievance.platform,
     category: grievance.category,
     description: grievance.description,
     tags: grievance.tags ?? [],
-    cluster_id: grievance.clusterId ?? null,
+    cluster_id: clusterId,
     cluster_label: grievance.clusterLabel ?? null,
-    escalation_status: grievance.escalationStatus,
+    escalation_status: escalationStatus,
     moderation_note: grievance.moderationNote ?? null,
+    can_delete: Boolean(isOwner && escalationStatus === "open" && !clusterId),
     is_anonymous: true,
-    created_at: grievance.createdAt,
-    updated_at: grievance.updatedAt,
+    created_at: grievance.createdAt ?? grievance.created_at,
+    updated_at: grievance.updatedAt ?? grievance.updated_at,
   };
 };
 

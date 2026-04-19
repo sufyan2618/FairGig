@@ -43,7 +43,7 @@ export const createComplaint = async (req, res) => {
     isAnonymous: true,
   });
 
-  res.status(201).json({ data: toPublicComplaint(grievance) });
+  res.status(201).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
 
 export const listComplaints = async (req, res) => {
@@ -59,7 +59,7 @@ export const listComplaints = async (req, res) => {
   ]);
 
   res.status(200).json({
-    data: items.map((item) => toPublicComplaint(item)),
+    data: items.map((item) => toPublicComplaint(item, { viewerUserId: req.auth?.userId })),
     pagination: buildPaginationMeta({
       page: pagination.page,
       limit: pagination.limit,
@@ -74,7 +74,7 @@ export const getComplaintById = async (req, res) => {
     raise(404, "COMPLAINT_NOT_FOUND", "Complaint not found.");
   }
 
-  res.status(200).json({ data: toPublicComplaint(grievance) });
+  res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
 
 export const deleteComplaint = async (req, res) => {

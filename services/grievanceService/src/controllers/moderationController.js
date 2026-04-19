@@ -17,7 +17,7 @@ export const updateTags = async (req, res) => {
   grievance.tags = req.body.tags;
   await grievance.save();
 
-  res.status(200).json({ data: toPublicComplaint(grievance) });
+  res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
 
 export const updateStatus = async (req, res) => {
@@ -45,7 +45,7 @@ export const updateStatus = async (req, res) => {
 
   await grievance.save();
 
-  res.status(200).json({ data: toPublicComplaint(grievance) });
+  res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
 
 export const updateCluster = async (req, res) => {
@@ -59,5 +59,5 @@ export const updateCluster = async (req, res) => {
 
   await grievance.save();
 
-  res.status(200).json({ data: toPublicComplaint(grievance) });
+  res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };

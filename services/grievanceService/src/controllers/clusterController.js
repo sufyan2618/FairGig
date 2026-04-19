@@ -79,7 +79,7 @@ export const getClusterComplaints = async (req, res) => {
   ]);
 
   res.status(200).json({
-    data: items.map((item) => toPublicComplaint(item)),
+    data: items.map((item) => toPublicComplaint(item, { viewerUserId: req.auth?.userId })),
     pagination: buildPaginationMeta({
       page: pagination.page,
       limit: pagination.limit,

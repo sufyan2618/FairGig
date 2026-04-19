@@ -303,9 +303,14 @@ export const importShiftsCsv = async (req: Request, res: Response): Promise<void
   const parsed = await parseCsvBuffer(file.buffer);
 
   if (parsed.failures.length > 0) {
+    const failurePreview = parsed.failures
+      .slice(0, 3)
+      .map((failure) => `row ${failure.row}: ${failure.reason}`)
+      .join('; ');
+
     res.status(400).json({
       error: 'INVALID_CSV_FORMAT',
-      message: 'CSV validation failed.',
+      message: `CSV validation failed. ${failurePreview}${parsed.failures.length > 3 ? ' ...' : ''}`,
       status: 400,
       summary: {
         total_rows: parsed.totalRows,

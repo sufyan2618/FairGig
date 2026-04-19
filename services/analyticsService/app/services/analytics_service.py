@@ -26,9 +26,18 @@ from app.utils.dates import month_label, parse_month_label, previous_month, week
 from app.utils.hashing import worker_reference
 
 
+def _normalize_filter_value(value: str, field_name: str) -> tuple[str, str]:
+    cleaned = " ".join(value.strip().split())
+    if not cleaned:
+        raise ValueError(f"{field_name} is required")
+    return cleaned, cleaned.lower()
+
+
 def get_worker_median(category: str, city_zone: str, month: str | None) -> WorkerMedianResponse:
+    category_clean, category_norm = _normalize_filter_value(category, "category")
+    city_zone_clean, city_zone_norm = _normalize_filter_value(city_zone, "city_zone")
     month_start = parse_month_label(month)
-    cache_key = f"worker_median:{category}:{city_zone}:{month_label(month_start)}"
+    cache_key = f"worker_median:{category_norm}:{city_zone_norm}:{month_label(month_start)}"
     cached = analytics_cache.get(cache_key)
     if cached is not None:
         return cached
@@ -39,8 +48,8 @@ def get_worker_median(category: str, city_zone: str, month: str | None) -> Worke
         FROM shift_logs
         WHERE verification_status = 'verified'
           AND deleted_at IS NULL
-          AND worker_category = :category
-          AND city_zone = :city_zone
+                    AND lower(trim(worker_category)) = :category_norm
+                    AND lower(trim(city_zone)) = :city_zone_norm
           AND date_trunc('month', shift_date::timestamp) = date_trunc('month', CAST(:month_start AS date))
         GROUP BY worker_id
     )
@@ -53,8 +62,8 @@ def get_worker_median(category: str, city_zone: str, month: str | None) -> Worke
     row = fetch_one(
         query,
         {
-            "category": category,
-            "city_zone": city_zone,
+            "category_norm": category_norm,
+            "city_zone_norm": city_zone_norm,
             "month_start": month_start,
         },
     ) or {"cohort_size": 0, "median_net_earned_pkr": None}
@@ -64,8 +73,8 @@ def get_worker_median(category: str, city_zone: str, month: str | None) -> Worke
 
     if cohort_size < settings.MIN_COHORT_SIZE:
         response = WorkerMedianResponse(
-            category=category,
-            city_zone=city_zone,
+            category=category_clean,
+            city_zone=city_zone_clean,
             month=month_label(month_start),
             median_net_earned_pkr=None,
             cohort_size=cohort_size,
@@ -77,8 +86,8 @@ def get_worker_median(category: str, city_zone: str, month: str | None) -> Worke
         )
     else:
         response = WorkerMedianResponse(
-            category=category,
-            city_zone=city_zone,
+            category=category_clean,
+            city_zone=city_zone_clean,
             month=month_label(month_start),
             median_net_earned_pkr=round(float(median_value or 0), 2),
             cohort_size=cohort_size,
