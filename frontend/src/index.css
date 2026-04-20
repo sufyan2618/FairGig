@@ -46,6 +46,17 @@ body {
 	}
 }
 
+@keyframes drift {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-4px);
+	}
+}
+
 @keyframes toast-in {
 	from {
 		opacity: 0;
@@ -77,6 +88,10 @@ body {
 		animation: fade-up 500ms ease-out both;
 	}
 
+	.animate-drift {
+		animation: drift 4s ease-in-out infinite;
+	}
+
 	.animate-toast-in {
 		animation: toast-in 240ms ease-out both;
 	}
@@ -85,6 +100,34 @@ body {
 		animation-name: toast-progress;
 		animation-timing-function: linear;
 		animation-fill-mode: both;
+	}
+}
+
+.landing-scroll-track {
+	overflow: hidden;
+	mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+	-webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+.landing-scroll-content {
+	display: flex;
+	width: max-content;
+	gap: 0.5rem;
+	animation: landing-scroll 26s linear infinite;
+	will-change: transform;
+}
+
+.landing-scroll-track:hover .landing-scroll-content {
+	animation-play-state: paused;
+}
+
+@keyframes landing-scroll {
+	from {
+		transform: translateX(0);
+	}
+
+	to {
+		transform: translateX(-50%);
 	}
 }
 
@@ -103,5 +146,11 @@ body {
 @media (max-width: 767px) {
 	.auth-content {
 		min-height: auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.landing-scroll-content {
+		animation: none;
 	}
 }

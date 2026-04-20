@@ -7,6 +7,7 @@ import { Signup } from './pages/Signup.tsx'
 import { VerifyEmailOtp } from './pages/VerifyEmailOtp.tsx'
 import { ForgotPassword } from './pages/ForgotPassword.tsx'
 import { ResetPassword } from './pages/ResetPassword.tsx'
+import LandingPage from './pages/LandingPage.tsx'
 import AdvocateDashboardPage from './pages/advocate/DashboardPage.tsx'
 import CommissionRateTrackerPage from './pages/advocate/CommissionRateTrackerPage.tsx'
 import ComplaintAnalyticsPage from './pages/advocate/ComplaintAnalyticsPage.tsx'
@@ -143,7 +144,7 @@ const FallbackRedirect = () => {
 	}
 
 	if (!isAuthenticated || !user) {
-		return <Navigate to="/login" replace />
+		return <Navigate to="/" replace />
 	}
 
 	return (
@@ -165,6 +166,14 @@ const AppRoutes = () => (
 		<RouteToast />
 		<ToastViewport />
 		<Routes>
+			<Route
+				path="/"
+				element={
+					<PublicOnlyRoute>
+						<LandingPage />
+					</PublicOnlyRoute>
+				}
+			/>
 			<Route
 				path="/login"
 				element={

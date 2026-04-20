@@ -54,6 +54,22 @@ export const Signup = () => {
 			<div className="pointer-events-none absolute -left-20 top-10 h-64 w-64 rounded-full bg-[#FF914D]/20 blur-3xl" />
 			<div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-[#FF914D]/25 blur-3xl" />
 
+			<header className="relative z-20 border-b border-[#1D1D1D]/10 bg-[#FFF4EB]/90 backdrop-blur-md">
+				<div className="mx-auto flex w-full max-w-4xl items-center justify-between px-3 py-2.5 sm:px-4">
+					<Link to="/" className="flex items-center gap-2.5">
+						<span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-[#1D1D1D]/10 bg-white">
+							<img src={logo} alt="FairGig logo" className="h-full w-full object-cover" />
+						</span>
+						<strong className="text-sm tracking-wide">FairGig</strong>
+					</Link>
+					<nav className="flex items-center gap-2">
+						<Link to="/login" className="rounded-lg bg-[#FF914D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-95">
+							Sign in
+						</Link>
+					</nav>
+				</div>
+			</header>
+
 			<div className="auth-content relative mx-auto grid w-full max-w-4xl grid-cols-1 items-start gap-2.5 px-3 py-2 sm:px-4 md:grid-cols-2 md:items-stretch md:gap-2.5 lg:gap-3 lg:py-2">
 				<section
 					aria-label="Onboarding preview"
