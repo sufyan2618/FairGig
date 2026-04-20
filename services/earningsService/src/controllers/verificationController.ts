@@ -6,6 +6,7 @@ import { db } from '../lib/db.js';
 import { shiftLogsTable, verificationDecisionsTable } from '../db/schema.js';
 import type { VerificationDecisionBody } from '../types/earnings.js';
 import { raise } from '../utils/errors.js';
+import { getPublicRequestOrigin, normalizeScreenshotPublicUrl } from '../utils/files.js';
 import { parseDateIso, parsePositiveInt } from '../utils/validation.js';
 
 const DEFAULT_PAGE = 1;
@@ -123,6 +124,13 @@ export const getVerificationById = async (req: Request, res: Response): Promise<
     raise(403, 'SHIFT_LOCKED', 'This shift log is not available in verification queue.');
   }
 
+  const publicOrigin = getPublicRequestOrigin(
+    req.protocol,
+    req.get('host') || 'localhost:3001',
+    req.get('x-forwarded-proto'),
+    req.get('x-forwarded-host'),
+  );
+
   res.status(200).json({
     data: {
       id: shift.id,
@@ -134,7 +142,7 @@ export const getVerificationById = async (req: Request, res: Response): Promise<
       gross_earned: shift.grossEarned,
       deductions: shift.platformDeductions,
       net_received: shift.netReceived,
-      screenshot_url: shift.screenshotUrl,
+      screenshot_url: normalizeScreenshotPublicUrl(shift.screenshotUrl, publicOrigin),
       verification_status: shift.verificationStatus,
       submitted_at: shift.submittedAt,
     },

@@ -11,6 +11,7 @@ const CERTIFICATE_SERVICE_URL = process.env.CERTIFICATE_SERVICE_URL || "http://1
 const INTROSPECT_URL = process.env.AUTH_INTROSPECT_URL || `${AUTH_SERVICE_URL}/api/auth/introspect`;
 
 const ROUTES = [
+  { prefix: "/uploads/", target: EARNINGS_SERVICE_URL, requiresAuth: false },
   { prefix: "/api/auth/", target: AUTH_SERVICE_URL, requiresAuth: false },
   { prefix: "/api/earnings/", target: EARNINGS_SERVICE_URL, requiresAuth: true },
   { prefix: "/api/analytics/", target: ANALYTICS_SERVICE_URL, requiresAuth: true },
@@ -134,6 +135,12 @@ async function proxyRequest(req, res, route, extraHeaders = {}) {
   const requestBody = hasBody ? await readRequestBody(req) : undefined;
 
   const headers = buildForwardHeaders(req.headers, extraHeaders);
+  if (req.headers.host && !headers.has("x-forwarded-host")) {
+    headers.set("x-forwarded-host", req.headers.host);
+  }
+  if (!headers.has("x-forwarded-proto")) {
+    headers.set("x-forwarded-proto", "http");
+  }
   if (!requestBody || requestBody.length === 0) {
     headers.delete("content-length");
   }

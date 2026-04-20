@@ -6,7 +6,12 @@ import { db } from '../lib/db.js';
 import type { ShiftBody } from '../types/earnings.js';
 import { createTemplateCsv, parseCsvBuffer } from '../utils/csv.js';
 import { raise } from '../utils/errors.js';
-import { buildScreenshotPublicUrl, removeFileIfExists } from '../utils/files.js';
+import {
+  buildScreenshotPublicUrl,
+  getPublicRequestOrigin,
+  normalizeScreenshotPublicUrl,
+  removeFileIfExists,
+} from '../utils/files.js';
 import {
   isUuid,
   minutesToHours,
@@ -387,7 +392,13 @@ export const uploadShiftScreenshot = async (req: Request, res: Response): Promis
     raise(403, 'SHIFT_LOCKED', 'This shift log is locked and cannot accept new screenshots.');
   }
 
-  const publicUrl = buildScreenshotPublicUrl(req.protocol, req.get('host') || 'localhost:3001', file.filename);
+  const publicOrigin = getPublicRequestOrigin(
+    req.protocol,
+    req.get('host') || 'localhost:3001',
+    req.get('x-forwarded-proto'),
+    req.get('x-forwarded-host'),
+  );
+  const publicUrl = buildScreenshotPublicUrl(publicOrigin, file.filename);
   const updatedRows = await db
     .update(shiftLogsTable)
     .set({
@@ -435,9 +446,16 @@ export const getShiftScreenshot = async (req: Request, res: Response): Promise<v
     raise(404, 'SCREENSHOT_NOT_FOUND', 'Screenshot not found for this shift log.');
   }
 
+  const publicOrigin = getPublicRequestOrigin(
+    req.protocol,
+    req.get('host') || 'localhost:3001',
+    req.get('x-forwarded-proto'),
+    req.get('x-forwarded-host'),
+  );
+
   res.status(200).json({
     shift_id: shift.id,
     verification_status: shift.verificationStatus,
-    screenshot_url: shift.screenshotUrl,
+    screenshot_url: normalizeScreenshotPublicUrl(shift.screenshotUrl, publicOrigin),
   });
 };

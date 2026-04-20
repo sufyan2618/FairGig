@@ -63,6 +63,55 @@ export const removeFileIfExists = (filePath: string | null | undefined): void =>
   }
 };
 
-export const buildScreenshotPublicUrl = (reqProtocol: string, reqHost: string, fileName: string): string => {
-  return `${reqProtocol}://${reqHost}/uploads/screenshots/${fileName}`;
+const normalizeForwardedValue = (value: string | null | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+  return value.split(',')[0]?.trim() || null;
+};
+
+const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
+
+const isInternalHostname = (hostname: string): boolean => {
+  return (
+    hostname === 'earnings-service'
+    || hostname === 'localhost'
+    || hostname === '127.0.0.1'
+    || hostname === '0.0.0.0'
+  );
+};
+
+export const getPublicRequestOrigin = (
+  reqProtocol: string,
+  reqHost: string,
+  forwardedProto?: string | null,
+  forwardedHost?: string | null,
+): string => {
+  const proto = normalizeForwardedValue(forwardedProto) || reqProtocol || 'http';
+  const host = normalizeForwardedValue(forwardedHost) || reqHost || 'localhost:8080';
+  return `${proto}://${trimTrailingSlash(host)}`;
+};
+
+export const buildScreenshotPublicUrl = (origin: string, fileName: string): string => {
+  return `${trimTrailingSlash(origin)}/uploads/screenshots/${fileName}`;
+};
+
+export const normalizeScreenshotPublicUrl = (url: string | null, publicOrigin: string): string | null => {
+  if (!url) {
+    return null;
+  }
+
+  if (url.startsWith('/uploads/')) {
+    return `${trimTrailingSlash(publicOrigin)}${url}`;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (isInternalHostname(parsed.hostname)) {
+      return `${trimTrailingSlash(publicOrigin)}${parsed.pathname}${parsed.search}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
 };
