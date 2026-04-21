@@ -3,7 +3,7 @@ import { and, count, desc, eq, gte, lte, sql } from 'drizzle-orm';
 
 import { shiftLogsTable } from '../db/schema.js';
 import { db } from '../lib/db.js';
-import { deleteS3ObjectIfExists, uploadScreenshotToS3 } from '../lib/s3.js';
+import { deleteS3ObjectIfExists, resolveScreenshotAccessUrl, uploadScreenshotToS3 } from '../lib/s3.js';
 import type { ShiftBody } from '../types/earnings.js';
 import { createTemplateCsv, parseCsvBuffer } from '../utils/csv.js';
 import { raise } from '../utils/errors.js';
@@ -444,9 +444,11 @@ export const getShiftScreenshot = async (req: Request, res: Response): Promise<v
     raise(404, 'SCREENSHOT_NOT_FOUND', 'Screenshot not found for this shift log.');
   }
 
+  const screenshotUrl = await resolveScreenshotAccessUrl(shift.screenshotUrl, shift.screenshotStoragePath);
+
   res.status(200).json({
     shift_id: shift.id,
     verification_status: shift.verificationStatus,
-    screenshot_url: shift.screenshotUrl,
+    screenshot_url: screenshotUrl,
   });
 };

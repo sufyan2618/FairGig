@@ -22,6 +22,7 @@ export const env = {
   awsSecretAccessKey: required('AWS_SECRET_ACCESS_KEY'),
   awsS3BucketName: required('AWS_S3_BUCKET_NAME'),
   s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL ?? null,
+  s3SignedUrlTtlSeconds: Number.parseInt(process.env.S3_SIGNED_URL_TTL_SECONDS ?? '900', 10),
   maxScreenshotSizeBytes: Number.parseInt(process.env.MAX_SCREENSHOT_SIZE_BYTES ?? `${5 * 1024 * 1024}`, 10),
   maxCsvSizeBytes: Number.parseInt(process.env.MAX_CSV_SIZE_BYTES ?? `${2 * 1024 * 1024}`, 10),
 };

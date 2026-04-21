@@ -22,6 +22,9 @@ http://localhost:3001/api/earnings
 - `AWS_SECRET_ACCESS_KEY`
 - `AWS_S3_BUCKET_NAME`
 - `S3_PUBLIC_BASE_URL` (optional; use when serving via CloudFront/custom domain)
+- `S3_SIGNED_URL_TTL_SECONDS` (optional; defaults to 900)
+
+Screenshot responses are returned as time-limited signed URLs when an S3 object key is available.
 
 ## Auth Model
 

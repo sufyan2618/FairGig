@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1033.0",
+    "@aws-sdk/s3-request-presigner": "^3.1033.0",
     "@types/cors": "^2.8.19",
     "@types/multer": "^2.0.0",
     "cookie-parser": "^1.4.7",

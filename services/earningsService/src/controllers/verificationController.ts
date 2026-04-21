@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 
 import { db } from '../lib/db.js';
 import { shiftLogsTable, verificationDecisionsTable } from '../db/schema.js';
+import { resolveScreenshotAccessUrl } from '../lib/s3.js';
 import type { VerificationDecisionBody } from '../types/earnings.js';
 import { raise } from '../utils/errors.js';
 import { parseDateIso, parsePositiveInt } from '../utils/validation.js';
@@ -123,6 +124,8 @@ export const getVerificationById = async (req: Request, res: Response): Promise<
     raise(403, 'SHIFT_LOCKED', 'This shift log is not available in verification queue.');
   }
 
+  const screenshotUrl = await resolveScreenshotAccessUrl(shift.screenshotUrl, shift.screenshotStoragePath);
+
 
   res.status(200).json({
     data: {
@@ -135,7 +138,7 @@ export const getVerificationById = async (req: Request, res: Response): Promise<
       gross_earned: shift.grossEarned,
       deductions: shift.platformDeductions,
       net_received: shift.netReceived,
-      screenshot_url: shift.screenshotUrl,
+      screenshot_url: screenshotUrl,
       verification_status: shift.verificationStatus,
       submitted_at: shift.submittedAt,
     },

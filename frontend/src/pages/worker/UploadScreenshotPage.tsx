@@ -226,7 +226,7 @@ const UploadScreenshotPage = () => {
                   <p className="border-b border-[#e4e7ec] bg-white px-4 py-2 text-sm font-medium text-[#1d1d1d]">
                     New screenshot preview
                   </p>
-                  <img src={previewUrl} alt="New screenshot preview" className="h-64 w-full object-cover" />
+                  <img src={previewUrl} alt="New screenshot preview" className="h-64 w-full object-contain" />
                 </div>
               ) : null}
 
@@ -238,7 +238,7 @@ const UploadScreenshotPage = () => {
                   <img
                     src={resolvedScreenshotUrl}
                     alt="Existing attached screenshot"
-                    className="h-64 w-full object-cover"
+                    className="h-64 w-full object-contain"
                   />
                 </div>
               ) : null}

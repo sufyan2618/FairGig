@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { env } from '../config/env.js';
 
@@ -34,6 +35,19 @@ const createScreenshotObjectKey = (workerId: string, shiftId: string, file: Expr
   const random = crypto.randomBytes(16).toString('hex');
   const extension = safeImageExtension(file);
   return `screenshots/${workerId}/${shiftId}-${Date.now()}-${random}${extension}`;
+};
+
+const getSignedScreenshotUrl = async (objectKey: string): Promise<string> => {
+  return getSignedUrl(
+    s3Client,
+    new GetObjectCommand({
+      Bucket: env.awsS3BucketName,
+      Key: objectKey,
+    }),
+    {
+      expiresIn: env.s3SignedUrlTtlSeconds,
+    },
+  );
 };
 
 export const uploadScreenshotToS3 = async (
@@ -74,4 +88,23 @@ export const deleteS3ObjectIfExists = async (objectKey: string | null | undefine
     Bucket: env.awsS3BucketName,
     Key: key,
   }));
+};
+
+export const resolveScreenshotAccessUrl = async (
+  screenshotUrl: string | null,
+  screenshotStoragePath: string | null,
+): Promise<string | null> => {
+  if (!screenshotUrl) {
+    return null;
+  }
+
+  if (!screenshotStoragePath) {
+    return screenshotUrl;
+  }
+
+  try {
+    return await getSignedScreenshotUrl(screenshotStoragePath);
+  } catch {
+    return screenshotUrl;
+  }
 };
