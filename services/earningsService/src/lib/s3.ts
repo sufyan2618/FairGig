@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
-import path from 'node:path';
 
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import sharp from 'sharp';
 
 import { env } from '../config/env.js';
 
@@ -23,17 +23,33 @@ const getS3PublicBaseUrl = (): string => {
   return `https://${env.awsS3BucketName}.s3.${env.awsRegion}.amazonaws.com`;
 };
 
-const safeImageExtension = (file: Express.Multer.File): string => {
-  const fromName = path.extname(file.originalname || '').toLowerCase();
-  if (fromName === '.jpg' || fromName === '.jpeg' || fromName === '.png') {
-    return fromName;
+const optimizeScreenshotImage = async (
+  file: Express.Multer.File,
+): Promise<{ optimizedBuffer: Buffer; contentType: string; extension: string }> => {
+  if (!file.buffer) {
+    throw new Error('Screenshot buffer is missing for S3 upload.');
   }
-  return file.mimetype === 'image/png' ? '.png' : '.jpg';
+
+  const optimizedBuffer = await sharp(file.buffer)
+    .rotate()
+    .resize({
+      width: env.screenshotOptimizeMaxWidth,
+      height: env.screenshotOptimizeMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: env.screenshotOptimizeWebpQuality })
+    .toBuffer();
+
+  return {
+    optimizedBuffer,
+    contentType: 'image/webp',
+    extension: '.webp',
+  };
 };
 
-const createScreenshotObjectKey = (workerId: string, shiftId: string, file: Express.Multer.File): string => {
+const createScreenshotObjectKey = (workerId: string, shiftId: string, extension: string): string => {
   const random = crypto.randomBytes(16).toString('hex');
-  const extension = safeImageExtension(file);
   return `screenshots/${workerId}/${shiftId}-${Date.now()}-${random}${extension}`;
 };
 
@@ -55,17 +71,16 @@ export const uploadScreenshotToS3 = async (
   shiftId: string,
   file: Express.Multer.File,
 ): Promise<{ objectKey: string; publicUrl: string }> => {
-  if (!file.buffer) {
-    throw new Error('Screenshot buffer is missing for S3 upload.');
-  }
+  const { optimizedBuffer, contentType, extension } = await optimizeScreenshotImage(file);
 
-  const objectKey = createScreenshotObjectKey(workerId, shiftId, file);
+  const objectKey = createScreenshotObjectKey(workerId, shiftId, extension);
 
   await s3Client.send(new PutObjectCommand({
     Bucket: env.awsS3BucketName,
     Key: objectKey,
-    Body: file.buffer,
-    ContentType: file.mimetype,
+    Body: optimizedBuffer,
+    ContentType: contentType,
+    CacheControl: 'public, max-age=31536000, immutable',
   }));
 
   return {

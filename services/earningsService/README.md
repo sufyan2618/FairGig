@@ -23,8 +23,12 @@ http://localhost:3001/api/earnings
 - `AWS_S3_BUCKET_NAME`
 - `S3_PUBLIC_BASE_URL` (optional; use when serving via CloudFront/custom domain)
 - `S3_SIGNED_URL_TTL_SECONDS` (optional; defaults to 900)
+- `SCREENSHOT_OPTIMIZE_MAX_WIDTH` (optional; defaults to 1600)
+- `SCREENSHOT_OPTIMIZE_MAX_HEIGHT` (optional; defaults to 1600)
+- `SCREENSHOT_OPTIMIZE_WEBP_QUALITY` (optional; defaults to 72)
 
 Screenshot responses are returned as time-limited signed URLs when an S3 object key is available.
+Screenshots are optimized to WebP on upload to reduce payload size and improve verifier load speed.
 
 ## Auth Model
 

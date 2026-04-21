@@ -220,6 +220,10 @@ const VerificationReviewPage = () => {
                       <img
                         src={selectedSubmission.screenshotUrl}
                         alt={`Submission ${selectedSubmission.id}`}
+                        loading="eager"
+                        decoding="async"
+                        fetchPriority="high"
+                        referrerPolicy="no-referrer"
                         className="h-90 w-full rounded-xl border border-[#dce2ec] object-cover"
                       />
                     ) : (

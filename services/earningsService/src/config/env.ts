@@ -23,6 +23,9 @@ export const env = {
   awsS3BucketName: required('AWS_S3_BUCKET_NAME'),
   s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL ?? null,
   s3SignedUrlTtlSeconds: Number.parseInt(process.env.S3_SIGNED_URL_TTL_SECONDS ?? '900', 10),
+  screenshotOptimizeMaxWidth: Number.parseInt(process.env.SCREENSHOT_OPTIMIZE_MAX_WIDTH ?? '1600', 10),
+  screenshotOptimizeMaxHeight: Number.parseInt(process.env.SCREENSHOT_OPTIMIZE_MAX_HEIGHT ?? '1600', 10),
+  screenshotOptimizeWebpQuality: Number.parseInt(process.env.SCREENSHOT_OPTIMIZE_WEBP_QUALITY ?? '72', 10),
   maxScreenshotSizeBytes: Number.parseInt(process.env.MAX_SCREENSHOT_SIZE_BYTES ?? `${5 * 1024 * 1024}`, 10),
   maxCsvSizeBytes: Number.parseInt(process.env.MAX_CSV_SIZE_BYTES ?? `${2 * 1024 * 1024}`, 10),
 };
