@@ -15,6 +15,14 @@ Service base URL:
 
 http://localhost:3001/api/earnings
 
+## Required Environment For Screenshot Uploads
+
+- `AWS_REGION`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_S3_BUCKET_NAME`
+- `S3_PUBLIC_BASE_URL` (optional; use when serving via CloudFront/custom domain)
+
 ## Auth Model
 
 - Worker and verifier endpoints require Bearer access token.

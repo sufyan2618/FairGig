@@ -97,13 +97,15 @@ services:
       FRONTEND_URL: http://localhost:5173
       ACCESS_TOKEN_SECRET: change-access-token-secret
       INTERNAL_SERVICE_API_KEY: fairgig-internal-dev-key
-      UPLOADS_DIR: uploads
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
       MAX_SCREENSHOT_SIZE_BYTES: 5242880
       MAX_CSV_SIZE_BYTES: 2097152
     ports:
       - "3001:3001"
-    volumes:
-      - earnings-uploads:/app/uploads
     networks:
       - fairgig-net
 
@@ -265,4 +267,3 @@ networks:
 volumes:
   postgres-data:
   mongo-data:
-  earnings-uploads:

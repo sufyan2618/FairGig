@@ -644,7 +644,7 @@ Behavior:
 
 - Monetary values are integer PKR values.
 - Timestamps are UTC ISO 8601.
-- Screenshots are available under `/uploads/screenshots/*`.
+- Screenshot URLs returned by earnings APIs are direct S3/public object URLs.
 
 ## 3) Anomaly Service
 

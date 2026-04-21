@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Router } from 'express';
@@ -23,8 +21,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-app.use('/uploads', express.static(path.resolve(env.uploadsDir)));
 
 const router = Router();
 

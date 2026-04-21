@@ -3,15 +3,10 @@ import { and, count, desc, eq, gte, lte, sql } from 'drizzle-orm';
 
 import { shiftLogsTable } from '../db/schema.js';
 import { db } from '../lib/db.js';
+import { deleteS3ObjectIfExists, uploadScreenshotToS3 } from '../lib/s3.js';
 import type { ShiftBody } from '../types/earnings.js';
 import { createTemplateCsv, parseCsvBuffer } from '../utils/csv.js';
 import { raise } from '../utils/errors.js';
-import {
-  buildScreenshotPublicUrl,
-  getPublicRequestOrigin,
-  normalizeScreenshotPublicUrl,
-  removeFileIfExists,
-} from '../utils/files.js';
 import {
   isUuid,
   minutesToHours,
@@ -382,38 +377,41 @@ export const uploadShiftScreenshot = async (req: Request, res: Response): Promis
 
   const existing = rows[0];
   if (!existing) {
-    removeFileIfExists(file.path);
     raise(404, 'SHIFT_NOT_FOUND', 'Shift log not found.');
   }
   const currentShift = existing as typeof shiftLogsTable.$inferSelect;
 
   if (currentShift.verificationStatus === 'verified' || currentShift.verificationStatus === 'flagged' || currentShift.verificationStatus === 'unverifiable') {
-    removeFileIfExists(file.path);
     raise(403, 'SHIFT_LOCKED', 'This shift log is locked and cannot accept new screenshots.');
   }
 
-  const publicOrigin = getPublicRequestOrigin(
-    req.protocol,
-    req.get('host') || 'localhost:3001',
-    req.get('x-forwarded-proto'),
-    req.get('x-forwarded-host'),
-  );
-  const publicUrl = buildScreenshotPublicUrl(publicOrigin, file.filename);
-  const updatedRows = await db
-    .update(shiftLogsTable)
-    .set({
-      screenshotUrl: publicUrl,
-      screenshotStoragePath: file.path,
-      verificationStatus: 'pending_review',
-      updatedAt: new Date(),
-    })
-    .where(eq(shiftLogsTable.id, shiftId))
-    .returning();
+  const uploaded = await uploadScreenshotToS3(workerId, shiftId, file);
 
-  const updated = mustExist(updatedRows[0], 500, 'INTERNAL_SERVER_ERROR', 'Failed to update screenshot for shift log.');
+  let updated: typeof shiftLogsTable.$inferSelect;
+  try {
+    const updatedRows = await db
+      .update(shiftLogsTable)
+      .set({
+        screenshotUrl: uploaded.publicUrl,
+        screenshotStoragePath: uploaded.objectKey,
+        verificationStatus: 'pending_review',
+        updatedAt: new Date(),
+      })
+      .where(eq(shiftLogsTable.id, shiftId))
+      .returning();
 
-  if (currentShift.screenshotStoragePath && currentShift.screenshotStoragePath !== file.path) {
-    removeFileIfExists(currentShift.screenshotStoragePath);
+    updated = mustExist(updatedRows[0], 500, 'INTERNAL_SERVER_ERROR', 'Failed to update screenshot for shift log.');
+  } catch (error) {
+    await deleteS3ObjectIfExists(uploaded.objectKey);
+    throw error;
+  }
+
+  if (currentShift.screenshotStoragePath && currentShift.screenshotStoragePath !== uploaded.objectKey) {
+    try {
+      await deleteS3ObjectIfExists(currentShift.screenshotStoragePath);
+    } catch {
+      // Avoid failing the request when cleanup of the replaced screenshot fails.
+    }
   }
 
   res.status(200).json({
@@ -446,16 +444,9 @@ export const getShiftScreenshot = async (req: Request, res: Response): Promise<v
     raise(404, 'SCREENSHOT_NOT_FOUND', 'Screenshot not found for this shift log.');
   }
 
-  const publicOrigin = getPublicRequestOrigin(
-    req.protocol,
-    req.get('host') || 'localhost:3001',
-    req.get('x-forwarded-proto'),
-    req.get('x-forwarded-host'),
-  );
-
   res.status(200).json({
     shift_id: shift.id,
     verification_status: shift.verificationStatus,
-    screenshot_url: normalizeScreenshotPublicUrl(shift.screenshotUrl, publicOrigin),
+    screenshot_url: shift.screenshotUrl,
   });
 };
