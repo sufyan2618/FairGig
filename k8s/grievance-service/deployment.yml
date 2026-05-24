@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grievance-service
+  namespace: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grievance-service
+  template:
+    metadata:
+      labels:
+        app: grievance-service
+    spec:
+      containers:
+        - name: grievance-service
+          image: sufyanliaqat/grievance-service:v1
+          ports:
+            - containerPort: 3002
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                secretKeyRef:
+                  name: grievance-secrets
+                  key: NODE_ENV
+            - name: PORT
+              valueFrom:
+                secretKeyRef:
+                  name: grievance-secrets
+                  key: PORT
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: grievance-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grievance-secrets
+                  key: JWT_SECRET
+            - name: CORS_ORIGIN
+              valueFrom:
+                secretKeyRef:
+                  name: grievance-secrets
+                  key: CORS_ORIGIN
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 5

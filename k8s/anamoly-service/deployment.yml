@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anamoly-service
+  namespace: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: anamoly-service
+  template:
+    metadata:
+      labels:
+        app: anamoly-service
+    spec:
+      containers:
+        - name: anamoly-service
+          image: sufyanliaqat/anamoly-service:v1
+          ports:
+            - containerPort: 8002
+          env:
+            - name: API_PREFIX
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: API_PREFIX
+            - name: PORT
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: PORT
+            - name: SERVICE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: SERVICE_NAME
+            - name: SERVICE_VERSION
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: SERVICE_VERSION
+            - name: ACCESS_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: ACCESS_TOKEN_SECRET
+            - name: JWT_ALGORITHM
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: JWT_ALGORITHM
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: OPENAI_API_KEY
+            - name: OPENAI_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: OPENAI_MODEL
+            - name: OPENAI_TIMEOUT_SECONDS
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: OPENAI_TIMEOUT_SECONDS
+            - name: INTERNAL_SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: INTERNAL_SERVICE_API_KEY
+            - name: ALLOW_OPEN_DETECT
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: ALLOW_OPEN_DETECT
+            - name: ALLOWED_CORS_ORIGINS
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: ALLOWED_CORS_ORIGINS
+            - namae: PORT
+              valueFrom:
+                secretKeyRef:
+                  name: anamoly-secrets
+                  key: PORT
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 5

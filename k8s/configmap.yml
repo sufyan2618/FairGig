@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: app
+data:
+  init.sql: |
+    CREATE DATABASE fairgig_analytics;
+    CREATE DATABASE fairgig_earnings;
+    CREATE DATABASE fairgig_auth;

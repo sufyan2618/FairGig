@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: sufyanliaqat/auth-service:v1
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: ENVIRONMENT
+            - name: PORT
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: PORT
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: REDIS_URL
+            - name: APP_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: APP_NAME
+            - name: API_PREFIX
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: API_PREFIX
+            - name: ACCESS_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: ACCESS_TOKEN_SECRET
+            - name: REFRESH_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: REFRESH_TOKEN_SECRET
+            - name: OTP_HASH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: OTP_HASH_SECRET
+            - name: JWT_ALGORITHM
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: JWT_ALGORITHM
+            - name: BREVO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: BREVO_API_KEY
+            - name: BREVO_SENDER_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: BREVO_SENDER_EMAIL
+            - name: BREVO_SENDER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: BREVO_SENDER_NAME
+            - name: ALLOWED_CORS_ORIGINS
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: ALLOWED_CORS_ORIGINS
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5

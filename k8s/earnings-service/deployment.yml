@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: earnings-service
+  namespace: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: earnings-service
+  template:
+    metadata:
+      labels:
+        app: earnings-service
+    spec:
+      containers:
+        - name: earnings-service
+          image: sufyanliaqat/earnings-service:v1
+          ports:
+            - containerPort: 8001
+          env:
+            - name: PORT
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: PORT
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: DATABASE_URL
+            - name: FRONTEND_URL
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: FRONTEND_URL
+            - name: ACCESS_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: ACCESS_TOKEN_SECRET
+            - name: INTERNAL_SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: INTERNAL_SERVICE_API_KEY
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: AWS_REGION
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: AWS_S3_BUCKET_NAME
+            - name: S3_PUBLIC_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: S3_PUBLIC_BASE_URL
+            - name: MAX_SCREENSHOT_SIZE_BYTES
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: MAX_SCREENSHOT_SIZE_BYTES
+            - name: MAX_CSV_SIZE_BYTES
+              valueFrom:
+                secretKeyRef:
+                  name: earnings-secrets
+                  key: MAX_CSV_SIZE_BYTES
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 5
