@@ -39,11 +39,11 @@ spec:
                 secretKeyRef:
                   name: grievance-secrets
                   key: JWT_SECRET
-            - name: CORS_ORIGIN
+            - name: CORS_ORIGINS
               valueFrom:
                 secretKeyRef:
                   name: grievance-secrets
-                  key: CORS_ORIGIN
+                  key: CORS_ORIGINS
           readinessProbe:
             httpGet:
               path: /health

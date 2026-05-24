@@ -79,7 +79,7 @@ spec:
                 secretKeyRef:
                   name: anamoly-secrets
                   key: ALLOWED_CORS_ORIGINS
-            - namae: PORT
+            - name: PORT
               valueFrom:
                 secretKeyRef:
                   name: anamoly-secrets

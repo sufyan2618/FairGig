@@ -22,52 +22,52 @@ spec:
             - name: PORT
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: PORT
             - name: API_PREFIX
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: API_PREFIX
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: JWT_SECRET
             - name: ACCESS_TOKEN_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: ACCESS_TOKEN_SECRET
             - name: JWT_ALGORITHM
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: JWT_ALGORITHM
             - name: EARNINGS_SERVICE_URL
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: EARNINGS_SERVICE_URL
             - name: INTERNAL_SERVICE_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: INTERNAL_SERVICE_API_KEY
             - name: REQUEST_TIMEOUT_SECONDS
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: REQUEST_TIMEOUT_SECONDS
             - name: TEMPLATE_DIR
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: TEMPLATE_DIR
             - name: CORS_ORIGINS
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: certificate-secrets
                   key: CORS_ORIGINS
           readinessProbe:
             httpGet:
