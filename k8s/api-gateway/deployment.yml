@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: sufyanliaqat/api-gateway-service:v1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GATEWAY_PORT
+              value: "8080"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:8000"
+            - name: AUTH_INTROSPECT_URL
+              value: "http://auth-service:8000/api/auth/introspect"
+            - name: EARNINGS_SERVICE_URL
+              value: "http://earnings-service:8001"
+            - name: ANALYTICS_SERVICE_URL
+              value: "http://analytics-service:8003"
+            - name: ANOMALY_SERVICE_URL
+              value: "http://anomaly-service:8002"
+            - name: GRIEVANCE_SERVICE_URL
+              value: "http://grievance-service:3002"
+            - name: CERTIFICATE_SERVICE_URL
+              value: "http://certificate-service:8004"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
