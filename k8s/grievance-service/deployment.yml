@@ -46,7 +46,7 @@ spec:
                   key: CORS_ORIGINS
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/grievances/health
               port: 3002
             initialDelaySeconds: 10
             periodSeconds: 5

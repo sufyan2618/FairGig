@@ -71,7 +71,7 @@ spec:
                   key: CORS_ORIGINS
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/certificate/health
               port: 8004
             initialDelaySeconds: 10
             periodSeconds: 5

@@ -81,7 +81,7 @@ spec:
                   key: MAX_CSV_SIZE_BYTES
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/health
               port: 8001
             initialDelaySeconds: 10
             periodSeconds: 5

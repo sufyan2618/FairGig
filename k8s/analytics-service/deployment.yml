@@ -86,7 +86,7 @@ spec:
                   key: CORS_ORIGINS
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/analytics/health
               port: 8003
             initialDelaySeconds: 10
             periodSeconds: 5

@@ -81,7 +81,7 @@ spec:
                   key: ALLOWED_CORS_ORIGINS
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/health
               port: 8002
             initialDelaySeconds: 10
             periodSeconds: 5

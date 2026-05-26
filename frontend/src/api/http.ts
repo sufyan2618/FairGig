@@ -6,9 +6,10 @@ interface ApiErrorBody {
 	error?: string
 }
 
-const FALLBACK_API_BASE_URL = 'http://localhost:8080'
+// Paths in *Api.ts already start with /api/... — do not set base URL to /api (causes /api/api/...).
+const FALLBACK_API_BASE_URL = ''
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || FALLBACK_API_BASE_URL
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ?? FALLBACK_API_BASE_URL
 
 export const apiHttp = axios.create({
 	baseURL: API_BASE_URL,

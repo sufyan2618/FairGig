@@ -30,7 +30,7 @@ spec:
             - name: ANALYTICS_SERVICE_URL
               value: "http://analytics-service:8003"
             - name: ANOMALY_SERVICE_URL
-              value: "http://anomaly-service:8002"
+              value: "http://anamoly-service:8002"
             - name: GRIEVANCE_SERVICE_URL
               value: "http://grievance-service:3002"
             - name: CERTIFICATE_SERVICE_URL
