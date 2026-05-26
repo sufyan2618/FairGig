@@ -28,8 +28,9 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: yourdomain.com
-      http:
+    # No host: matches any Host header (works with http://DROPLET_IP)
+    # When you add a domain, use: host: fairgig.example.com
+    - http:
         paths:
 
           # All API traffic goes to your Node.js gateway which handles:
