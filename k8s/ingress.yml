@@ -4,49 +4,26 @@ metadata:
   name: fairgig-ingress
   namespace: app
   annotations:
-    # Use regex capture groups for rewrite
-    nginx.ingress.kubernetes.io/use-regex: "true"
-
-    # Rewrite: strip the matched path prefix and forward the rest
-    # e.g. /api/auth/login -> /api/auth/login (no strip needed, gateway handles it)
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-
-    # Pass real client IP to gateway
     nginx.ingress.kubernetes.io/proxy-real-ip-cidr: "0.0.0.0/0"
-
-    # Increase timeouts for long-running requests (analytics, certificate generation)
     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
-
-    # Max body size (for file uploads in earnings service - screenshots/CSVs)
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-
-    # X-Forwarded-* headers are set by the ingress controller by default.
-    # configuration-snippet is disabled on many clusters for security.
-
 spec:
   ingressClassName: nginx
   rules:
-    # No host: matches any Host header (works with http://DROPLET_IP)
-    # When you add a domain, use: host: fairgig.example.com
+    # No host field — works with http://DROPLET_IP
     - http:
         paths:
-
-          # All API traffic goes to your Node.js gateway which handles:
-          # auth introspection, header forwarding (x-user-id, x-user-role etc.)
-          # and proxying to each microservice internally
-          - path: /api(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /api
+            pathType: Prefix
             backend:
               service:
                 name: api-gateway-service
                 port:
                   number: 8080
-
-          # Catch-all for everything else  React Router handles client-side routing
-          - path: /(.*)
-            pathType: ImplementationSpecific
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: frontend-service
