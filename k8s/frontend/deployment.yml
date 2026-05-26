@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: sufyanliaqat/frontend:v2
+          image: sufyanliaqat/frontend:v3
           ports:
             - containerPort: 80
