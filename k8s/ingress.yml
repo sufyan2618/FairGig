@@ -22,17 +22,13 @@ metadata:
     # Max body size (for file uploads in earnings service - screenshots/CSVs)
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 
-    # Forward original host and proto to gateway
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      proxy_set_header X-Forwarded-Host $host;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # X-Forwarded-* headers are set by the ingress controller by default.
+    # configuration-snippet is disabled on many clusters for security.
 
 spec:
   ingressClassName: nginx
   rules:
-    - host: yourdomain.com   
+    - host: 159.89.50.195
       http:
         paths:
 
