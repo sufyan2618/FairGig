@@ -27,9 +27,13 @@ spec:
                 secretKeyRef:
                   name: postgres-secrets
                   key: POSTGRES_PASSWORD
+          ports:
+            - containerPort: 5432
           volumeMounts:
-            - mountPath: /docker-entrypoint-initdb.d
-              name: init-sql
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
       volumes:
         - name: init-sql
           configMap:
