@@ -1,0 +1,218 @@
+name: CI/CD — Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+# Cancel any in-progress run for the same branch so only the latest commit deploys
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # 1. Detect which paths changed so we only build what needs rebuilding
+  # ─────────────────────────────────────────────────────────────────────────
+  detect:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      auth:        ${{ steps.filter.outputs.auth }}
+      earnings:    ${{ steps.filter.outputs.earnings }}
+      analytics:   ${{ steps.filter.outputs.analytics }}
+      anamoly:     ${{ steps.filter.outputs.anamoly }}
+      certificate: ${{ steps.filter.outputs.certificate }}
+      grievance:   ${{ steps.filter.outputs.grievance }}
+      gateway:     ${{ steps.filter.outputs.gateway }}
+      frontend:    ${{ steps.filter.outputs.frontend }}
+      k8s:         ${{ steps.filter.outputs.k8s }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            auth:
+              - 'services/authService/**'
+            earnings:
+              - 'services/earningsService/**'
+            analytics:
+              - 'services/analyticsService/**'
+            anamoly:
+              - 'services/anamolyService/**'
+            certificate:
+              - 'services/certificateService/**'
+            grievance:
+              - 'services/grievanceService/**'
+            gateway:
+              - 'ApiGateway/**'
+            frontend:
+              - 'frontend/**'
+            k8s:
+              - 'k8s/**'
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 2. Apply k8s manifests when yamls change
+  #    — Only applies services/pvcs/configmaps/ingress (NOT app deployments)
+  #      so we never overwrite the live image tags managed by kubectl set image
+  # ─────────────────────────────────────────────────────────────────────────
+  apply-k8s:
+    name: Apply k8s Manifests
+    needs: detect
+    if: needs.detect.outputs.k8s == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Copy the k8s folder to the VPS so it reflects the latest commit
+      - name: Copy k8s manifests to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "k8s/"
+          target: "/var/www/FairGig/"
+
+      - name: kubectl apply
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            K8S=/var/www/FairGig/k8s
+
+            # Namespace + config
+            kubectl apply -f $K8S/namespaces.yml
+            kubectl apply -f $K8S/configmap.yml
+            kubectl apply -f $K8S/ingress.yml
+
+            # Infrastructure (full apply — images don't change for these)
+            kubectl apply -f $K8S/postgres/pvc.yml
+            kubectl apply -f $K8S/postgres/deployment.yml
+            kubectl apply -f $K8S/postgres/service.yml
+
+            kubectl apply -f $K8S/mongodb/pvc.yml
+            kubectl apply -f $K8S/mongodb/deployment.yml
+            kubectl apply -f $K8S/mongodb/service.yml
+
+            kubectl apply -f $K8S/redis/pvc.yml
+            kubectl apply -f $K8S/redis/deployment.yml
+            kubectl apply -f $K8S/redis/service.yml
+
+            # App services — only Service objects (deployments are managed via
+            # kubectl set image so we don't overwrite the live image tag)
+            kubectl apply -f $K8S/auth-service/service.yml
+            kubectl apply -f $K8S/earnings-service/service.yml
+            kubectl apply -f $K8S/analytics-service/service.yml
+            kubectl apply -f $K8S/anamoly-service/service.yml
+            kubectl apply -f $K8S/certificate-service/service.yml
+            kubectl apply -f $K8S/grievance-service/service.yml
+            kubectl apply -f $K8S/api-gateway/service.yml
+            kubectl apply -f $K8S/frontend/service.yml
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 3. Build + push + deploy each changed service (all run in parallel)
+  # ─────────────────────────────────────────────────────────────────────────
+
+  auth-service:
+    name: auth-service
+    needs: detect
+    if: needs.detect.outputs.auth == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    services/authService
+      image:      auth-service
+      deployment: auth-service
+      container:  auth-service
+    secrets: inherit
+
+  earnings-service:
+    name: earnings-service
+    needs: detect
+    if: needs.detect.outputs.earnings == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    services/earningsService
+      image:      earnings-service
+      deployment: earnings-service
+      container:  earnings-service
+    secrets: inherit
+
+  analytics-service:
+    name: analytics-service
+    needs: detect
+    if: needs.detect.outputs.analytics == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    services/analyticsService
+      image:      analytics-service
+      deployment: analytics-service
+      container:  analytics-service
+    secrets: inherit
+
+  anamoly-service:
+    name: anamoly-service
+    needs: detect
+    if: needs.detect.outputs.anamoly == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    services/anamolyService
+      image:      anamoly-service
+      deployment: anamoly-service
+      container:  anamoly-service
+    secrets: inherit
+
+  certificate-service:
+    name: certificate-service
+    needs: detect
+    if: needs.detect.outputs.certificate == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    services/certificateService
+      image:      certificate-service
+      deployment: certificate-service
+      container:  certificate-service
+    secrets: inherit
+
+  grievance-service:
+    name: grievance-service
+    needs: detect
+    if: needs.detect.outputs.grievance == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    services/grievanceService
+      image:      grievance-service
+      deployment: grievance-service
+      container:  grievance-service
+    secrets: inherit
+
+  api-gateway:
+    name: api-gateway
+    needs: detect
+    if: needs.detect.outputs.gateway == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    ApiGateway
+      image:      api-gateway-service
+      deployment: api-gateway
+      container:  api-gateway
+    secrets: inherit
+
+  frontend:
+    name: frontend
+    needs: detect
+    if: needs.detect.outputs.frontend == 'true'
+    uses: ./.github/workflows/_service.yml
+    with:
+      context:    frontend
+      image:      frontend
+      deployment: frontend
+      container:  frontend
+      # VITE_API_BASE_URL is a GitHub Repository Variable (not a secret)
+      # Set it to your public API URL e.g. http://168.144.103.25
+      build-args: VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+    secrets: inherit
