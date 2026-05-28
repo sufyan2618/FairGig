@@ -59,10 +59,10 @@ export const Login = () => {
 				</div>
 			</header>
 
-			<div className="auth-content relative mx-auto grid w-full max-w-4xl grid-cols-1 items-start gap-2.5 px-3 py-2 sm:px-4 md:grid-cols-2 md:items-stretch md:gap-2.5 lg:gap-3 lg:py-2">
+			<div className="auth-content relative mx-auto grid w-full max-w-4xl grid-cols-1 items-start gap-3 px-3 py-3 sm:px-4 md:grid-cols-2 md:items-stretch md:gap-2.5 md:py-2 lg:gap-3">
 				<section
 					aria-label="Product preview"
-					className="flex flex-col rounded-3xl border border-[#FF914D]/20 bg-white/80 p-3 shadow-xl shadow-[#FF914D]/10 backdrop-blur-sm sm:p-3.5"
+					className="hidden flex-col rounded-3xl border border-[#FF914D]/20 bg-white/80 p-3 shadow-xl shadow-[#FF914D]/10 backdrop-blur-sm sm:p-3.5 md:flex"
 				>
 					<div className="mb-2 flex min-h-32 items-center justify-center overflow-hidden rounded-2xl bg-[#FFF9F4] p-1.5 sm:min-h-40 sm:p-2 md:min-h-48 [&>div]:h-full [&>div]:w-full">
 						{loginAnimationView}
@@ -77,7 +77,7 @@ export const Login = () => {
 
 				<section
 					aria-label="Login form"
-					className="flex flex-col justify-center rounded-3xl border border-[#1D1D1D]/10 bg-white p-3 shadow-xl shadow-[#1D1D1D]/5 sm:p-3.5"
+					className="mx-auto flex w-full max-w-md flex-col justify-center rounded-3xl border border-[#1D1D1D]/10 bg-white p-3 shadow-xl shadow-[#1D1D1D]/5 sm:p-3.5 md:max-w-none"
 				>
 					<div className="mb-2.5 flex items-center justify-center gap-2.5 text-center">
 						<span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#1D1D1D]/10 bg-white">
