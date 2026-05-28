@@ -4,6 +4,8 @@ metadata:
   name: fairgig-ingress
   namespace: app
   annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-real-ip-cidr: "0.0.0.0/0"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
@@ -11,9 +13,13 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - fairgig.sufyanliaqat.me
+      secretName: fairgig-tls
   rules:
-    # No host field — works with http://DROPLET_IP
-    - http:
+    - host: fairgig.sufyanliaqat.me
+      http:
         paths:
           - path: /api
             pathType: Prefix
