@@ -1,9 +1,37 @@
 import axios from 'axios'
 
+interface FastApiValidationErrorItem {
+	loc?: unknown[]
+	msg?: string
+}
+
 interface ApiErrorBody {
-	detail?: string
+	detail?: string | FastApiValidationErrorItem[]
 	message?: string
 	error?: string
+}
+
+const formatFastApiValidationErrors = (errors: FastApiValidationErrorItem[]): string | null => {
+	const formatted = errors
+		.map((item) => {
+			const message = typeof item.msg === 'string' ? item.msg.trim() : ''
+
+			if (!message) {
+				return ''
+			}
+
+			const location = Array.isArray(item.loc) ? item.loc.filter((segment) => typeof segment === 'string') : []
+			const field = location[location.length - 1]
+
+			return field ? `${field}: ${message}` : message
+		})
+		.filter(Boolean)
+
+	if (!formatted.length) {
+		return null
+	}
+
+	return formatted.join(', ')
 }
 
 // Paths in *Api.ts already start with /api/... — do not set base URL to /api (causes /api/api/...).
@@ -44,6 +72,14 @@ export const extractApiErrorMessage = (error: unknown, fallbackMessage = 'Someth
 				return parsed.detail
 			}
 
+			if (Array.isArray(parsed?.detail)) {
+				const validationErrorMessage = formatFastApiValidationErrors(parsed.detail)
+
+				if (validationErrorMessage) {
+					return validationErrorMessage
+				}
+			}
+
 			if (typeof parsed?.message === 'string' && parsed.message.trim()) {
 				return parsed.message
 			}
@@ -63,6 +99,14 @@ export const extractApiErrorMessage = (error: unknown, fallbackMessage = 'Someth
 
 		if (typeof body.detail === 'string' && body.detail.trim()) {
 			return body.detail
+		}
+
+		if (Array.isArray(body.detail)) {
+			const validationErrorMessage = formatFastApiValidationErrors(body.detail)
+
+			if (validationErrorMessage) {
+				return validationErrorMessage
+			}
 		}
 
 		if (typeof body.message === 'string' && body.message.trim()) {

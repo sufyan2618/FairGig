@@ -148,11 +148,6 @@ export const Login = () => {
 						>
 							{isLoading ? 'Signing in...' : 'Sign in'}
 						</button>
-
-						<p className="rounded-xl border border-[#FF914D]/20 bg-[#FFF8F2] px-3 py-2 text-xs text-[#8A4B23]">
-							Use the same email and password you registered with. If your access token expires, FairGig refreshes
-							it automatically during active sessions.
-						</p>
 					</form>
 
 					<p className="mt-2.5 text-center text-sm text-[#1D1D1D]/75">
