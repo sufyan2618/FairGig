@@ -2,7 +2,7 @@ name: CI/CD — Deploy to Production
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 # Cancel any in-progress run for the same branch so only the latest commit deploys
 concurrency:
