@@ -8,6 +8,13 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 import internalRouter from './routers/internalRouter.js';
 import shiftRouter from './routers/shiftRouter.js';
 import verificationRouter from './routers/verificationRouter.js';
+import './utils/tracing.js';
+import client from 'prom-client';
+
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+
 
 const app = express();
 
@@ -30,6 +37,12 @@ router.get('/health', (_req: Request, res: Response) => {
         service: 'earnings-service',
     });
 });
+
+app.get('/metrics', async (_req: Request, res: Response) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  });
+  
 
 app.use('/api', router);
 app.use('/api/earnings', shiftRouter);

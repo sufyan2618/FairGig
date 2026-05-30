@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: monitoring
+data:
+  config.alloy: |
+    // Scrape logs from all pods in the app namespace
+    loki.source.kubernetes "app_pods" {
+      targets    = discovery.kubernetes.pods.targets
+      forward_to = [loki.write.default.receiver]
+    }
+
+    discovery.kubernetes "pods" {
+      role = "pod"
+      namespaces {
+        names = ["app"]
+      }
+    }
+
+    loki.write "default" {
+      endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+      }
+      external_labels = {
+        cluster = "fairgig-k3s",
+      }
+    }
+
+    // Forward OTLP traces from services to Tempo
+    otelcol.receiver.otlp "default" {
+      grpc { endpoint = "0.0.0.0:4317" }
+      http { endpoint = "0.0.0.0:4318" }
+      output {
+        traces = [otelcol.exporter.otlp.tempo.input]
+      }
+    }
+
+    otelcol.exporter.otlp "tempo" {
+      client {
+        endpoint = "http://tempo:4317"
+        tls { insecure = true }
+      }
+    }

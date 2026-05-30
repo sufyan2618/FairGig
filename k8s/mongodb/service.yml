@@ -1,6 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    monitored: "true"
   name: mongodb-service
   namespace: app
 spec:

@@ -1,7 +1,7 @@
-import natural from "natural";
+import  from "";
 
-const tokenizer = new natural.WordTokenizer();
-const STOP_WORDS = new Set(natural.stopwords ?? []);
+const tokenizer = new .WordTokenizer();
+const STOP_WORDS = new Set(.stopwords ?? []);
 const SIMILARITY_THRESHOLD = 0.18;
 
 const normalizeTokens = (text) =>
@@ -61,7 +61,7 @@ export const buildSuggestedClusters = (complaints) => {
     tokens: normalizeTokens(item.description),
   }));
 
-  const tfidf = new natural.TfIdf();
+  const tfidf = new .TfIdf();
   for (const doc of docs) {
     tfidf.addDocument(doc.tokens.join(" "));
   }

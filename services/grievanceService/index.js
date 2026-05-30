@@ -5,6 +5,10 @@ import { env } from "./src/config/env.js";
 import { connectDB, getDbHealth } from "./src/lib/db.js";
 import { errorHandler, notFoundHandler } from "./src/middlewares/errorHandler.js";
 import grievanceRoutes from "./src/routes/grievanceRoutes.js";
+import './src/utils/tracing.js'
+import client from 'prom-client'
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
 
 const app = express();
 
@@ -25,6 +29,12 @@ app.get("/api/grievances/health", (_req, res) => {
         db: getDbHealth(),
     });
 });
+
+app.get('/metrics', async (_req, res) => {
+    console.log('Metrics requested');
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  });
 
 app.use("/api/grievances", grievanceRoutes);
 

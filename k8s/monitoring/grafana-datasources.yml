@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources-extra
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        url: http://loki:3100
+        access: proxy
+        isDefault: false
+        jsonData:
+          derivedFields:
+            - datasourceUid: tempo
+              matcherRegex: '"trace_id":"(\w+)"'
+              name: TraceID
+              url: "$${__value.raw}"   # clicking a trace_id in logs jumps to Tempo
+
+      - name: Tempo
+        type: tempo
+        url: http://tempo:3100
+        access: proxy
+        uid: tempo
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: "-1m"
+            spanEndTimeShift: "1m"
+            tags: [{ key: "service.name", value: "service" }]
+          serviceMap:
+            datasourceUid: prometheus
+          nodeGraph:
+            enabled: true
