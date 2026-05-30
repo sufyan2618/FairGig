@@ -90,3 +90,7 @@ export interface IntrospectResponse {
 export interface BasicMessageResponse {
 	message: string
 }
+
+export interface VerifyEmailOtpResponse {
+	message: string
+}
