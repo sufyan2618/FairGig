@@ -1,12 +1,11 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import pkg from '@opentelemetry/resources';
-const { Resource } = pkg;
+import { Resource } from '@opentelemetry/resources';
 
 const sdk = new NodeSDK({
   resource: new Resource({
-    'service.name': 'grievance-service',  
+    'service.name': 'grievance-service',
   }),
   traceExporter: new OTLPTraceExporter({
     url: 'http://alloy.monitoring.svc.cluster.local:4317',
@@ -14,7 +13,7 @@ const sdk = new NodeSDK({
   instrumentations: [
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-fs': {
-        enabled: false,  
+        enabled: false,
       },
       '@opentelemetry/instrumentation-http': { enabled: true },
       '@opentelemetry/instrumentation-express': { enabled: true },

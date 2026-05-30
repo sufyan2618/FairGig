@@ -63,8 +63,7 @@ logging.basicConfig(
     handlers=[handler]
 )
 
-# OpenTelemetry setup — sends traces to Alloy → Tempo
-resource = Resource.create({"service.name": "auth-service"})  # change per service
+resource = Resource.create({"service.name": "auth-service"})  
 provider = TracerProvider(resource=resource)
 provider.add_span_processor(
     BatchSpanProcessor(
@@ -78,9 +77,8 @@ trace.set_tracer_provider(provider)
 
 # Auto-instrument FastAPI and SQLAlchemy — zero manual span code needed
 FastAPIInstrumentor.instrument_app(app)
-SQLAlchemyInstrumentor().instrument(engine=async_engine)  # pass your DB engine
+SQLAlchemyInstrumentor().instrument(engine=async_engine.sync_engine)  
 
-# Expose /metrics endpoint for Prometheus scraping
 Instrumentator().instrument(app).expose(app)
 
 
