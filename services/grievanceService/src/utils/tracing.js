@@ -1,11 +1,12 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+
 import pkg from '@opentelemetry/resources';
-const { Resource } = pkg;
+const { resourceFromAttributes } = pkg;
 
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({       
     'service.name': 'grievance-service',
   }),
   traceExporter: new OTLPTraceExporter({
@@ -13,9 +14,7 @@ const sdk = new NodeSDK({
   }),
   instrumentations: [
     getNodeAutoInstrumentations({
-      '@opentelemetry/instrumentation-fs': {
-        enabled: false,
-      },
+      '@opentelemetry/instrumentation-fs': { enabled: false },
       '@opentelemetry/instrumentation-http': { enabled: true },
       '@opentelemetry/instrumentation-express': { enabled: true },
     }),
