@@ -16,6 +16,9 @@ spec:
       containers:
         - name: grievance-service
           image: sufyanliaqat/grievance-service:v1
+          command: ["sh", "-c"]
+          args:
+            - ulimit -n 65536 && npm run start
           ports:
             - containerPort: 3002
           env:

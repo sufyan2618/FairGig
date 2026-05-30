@@ -6,11 +6,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+import sys 
+import logging
 from app.core.config import settings
 from app.core.rate_limiter import enforce_rate_limit, get_client_ip
 from app.core.redis_client import close_redis
 from app.routers.auth import router as auth_router
-import logging
 import json
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -53,7 +54,14 @@ class JSONFormatter(logging.Formatter):
             log["span_id"] = format(ctx.span_id, "016x")
         return json.dumps(log)
 
-logging.getLogger().handlers[0].setFormatter(JSONFormatter())
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JSONFormatter())
+
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[handler]
+)
 
 # OpenTelemetry setup — sends traces to Alloy → Tempo
 resource = Resource.create({"service.name": "auth-service"})  # change per service

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers.certificate import router as certificate_router
 import logging
+import sys 
 import json
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -38,7 +39,13 @@ class JSONFormatter(logging.Formatter):
             log["span_id"] = format(ctx.span_id, "016x")
         return json.dumps(log)
 
-logging.getLogger().handlers[0].setFormatter(JSONFormatter())
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JSONFormatter())
+
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[handler]
+)
 
 resource = Resource.create({"service.name": "certificate-service"})  # change per service
 provider = TracerProvider(resource=resource)
