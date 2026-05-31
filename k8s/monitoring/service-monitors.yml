@@ -11,8 +11,15 @@ spec:
       - app
   selector:
     matchLabels:
-      monitored: "true"    # add this label to all your app services
+      monitored: "true"
   endpoints:
     - port: http
       path: /metrics
       interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: app                   
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
