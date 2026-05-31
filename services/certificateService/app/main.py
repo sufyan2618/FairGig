@@ -6,7 +6,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from app.core.config import settings
 from app.core.logging_config import RequestLoggingMiddleware, setup_logging
@@ -36,7 +36,18 @@ provider.add_span_processor(
 trace.set_tracer_provider(provider)
 
 FastAPIInstrumentor.instrument_app(app)
-Instrumentator().instrument(app).expose(app)
+Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=True,
+    should_group_untemplated=True,
+    excluded_handlers=[],
+).add(
+    metrics.info(
+        metric_name="fastapi_app_info",
+        metric_doc="FastAPI application information",
+        app_name="certificate-service",
+    )
+).instrument(app).expose(app)
 
 app.add_middleware(RequestLoggingMiddleware, service_name="certificate-service")
 app.add_middleware(
