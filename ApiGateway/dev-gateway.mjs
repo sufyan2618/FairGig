@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import { Buffer } from "node:buffer";
 
+import { logger, logRequest } from "./logger.mjs";
+
 const PORT = Number(process.env.GATEWAY_PORT || 8080);
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://127.0.0.1:8000";
 const EARNINGS_SERVICE_URL = process.env.EARNINGS_SERVICE_URL || "http://127.0.0.1:3001";
@@ -89,6 +91,7 @@ function buildForwardHeaders(reqHeaders, userHeaders = {}) {
 
 async function introspectToken(authorization) {
   if (!authorization) {
+    logger.warn("gateway auth failed", { event: "gateway_auth_failed", reason: "missing_authorization" });
     return {
       ok: false,
       status: 401,
@@ -107,6 +110,10 @@ async function introspectToken(authorization) {
   const body = Buffer.from(await authResponse.arrayBuffer());
 
   if (!authResponse.ok) {
+    logger.warn("gateway auth failed", {
+      event: "gateway_auth_failed",
+      status: authResponse.status,
+    });
     return {
       ok: false,
       status: authResponse.status,
@@ -170,6 +177,10 @@ async function proxyRequest(req, res, route, extraHeaders = {}) {
 }
 
 const server = createServer(async (req, res) => {
+  const startMs = performance.now();
+  const requestMeta = {};
+  logRequest(req, res, startMs, requestMeta);
+
   try {
     const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
@@ -190,12 +201,16 @@ const server = createServer(async (req, res) => {
 
     const route = resolveRoute(requestUrl.pathname);
     if (!route) {
+      logger.warn("gateway route not found", { event: "gateway_not_found", path: requestUrl.pathname });
       setCorsHeaders(req, res);
       res.statusCode = 404;
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ detail: "Route not found in API gateway" }));
       return;
     }
+
+    requestMeta.upstream = route.target;
+    requestMeta.requires_auth = route.requiresAuth;
 
     if (!route.requiresAuth) {
       await proxyRequest(req, res, route);
@@ -204,6 +219,7 @@ const server = createServer(async (req, res) => {
 
     const authResult = await introspectToken(req.headers.authorization);
     if (!authResult.ok) {
+      requestMeta.auth_ok = false;
       setCorsHeaders(req, res);
       res.statusCode = authResult.status;
       res.setHeader("Content-Type", authResult.contentType || "application/json");
@@ -211,8 +227,10 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    requestMeta.auth_ok = true;
     await proxyRequest(req, res, route, authResult.forwardedHeaders);
   } catch (error) {
+    logger.error("gateway upstream error", error, { event: "gateway_upstream_error", path: req.url });
     setCorsHeaders(req, res);
     res.statusCode = 502;
     res.setHeader("Content-Type", "application/json");
@@ -226,5 +244,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`FairGig API gateway listening on http://0.0.0.0:${PORT}`);
+  logger.info("api-gateway started", { event: "service_start", port: PORT });
 });

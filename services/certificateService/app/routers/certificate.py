@@ -8,12 +8,14 @@ from fastapi.templating import Jinja2Templates
 
 from app.core.config import settings
 from app.core.database import service_mode
+from app.core.logging_config import get_logger
 from app.dependencies import Principal, require_worker
 from app.schemas.certificate import CertificateDirectRequest, HealthResponse
 from app.services.certificate_service import build_certificate_context, fetch_verified_summary
 
 router = APIRouter()
 templates = Jinja2Templates(directory=settings.TEMPLATE_DIR)
+logger = get_logger(__name__)
 
 
 def _validate_iso_date(value: str | None, field_name: str) -> str | None:
@@ -47,6 +49,16 @@ async def render_certificate_from_earnings(
     date_to: str | None = Query(default=None),
     principal: Principal = Depends(require_worker),
 ) -> HTMLResponse:
+    logger.info(
+        "certificate render requested",
+        extra={
+            "event": "render_certificate",
+            "user_id": principal.user_id,
+            "date_from": date_from,
+            "date_to": date_to,
+            "source": "earnings",
+        },
+    )
     date_from_value = _validate_iso_date(date_from, "date_from")
     date_to_value = _validate_iso_date(date_to, "date_to")
 
@@ -67,6 +79,15 @@ async def render_certificate_from_earnings(
         breakdown=summary.per_platform_breakdown,
     )
 
+    logger.info(
+        "certificate rendered from earnings",
+        extra={
+            "event": "render_certificate_success",
+            "user_id": principal.user_id,
+            "shift_count": len(summary.verified_shifts),
+        },
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="income_certificate.html",
@@ -80,7 +101,25 @@ async def render_certificate_from_payload(
     payload: CertificateDirectRequest,
     principal: Principal = Depends(require_worker),
 ) -> HTMLResponse:
+    logger.info(
+        "direct certificate render requested",
+        extra={
+            "event": "render_certificate_direct",
+            "user_id": principal.user_id,
+            "worker_id": payload.worker_id,
+            "shift_count": len(payload.verified_shifts),
+        },
+    )
+
     if payload.worker_id != principal.user_id:
+        logger.warning(
+            "certificate render forbidden",
+            extra={
+                "event": "render_certificate_forbidden",
+                "user_id": principal.user_id,
+                "requested_worker_id": payload.worker_id,
+            },
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Workers can generate certificate for their own verified data only.",
@@ -95,6 +134,11 @@ async def render_certificate_from_payload(
         shifts=payload.verified_shifts,
         totals=payload.totals,
         breakdown=payload.per_platform_breakdown,
+    )
+
+    logger.info(
+        "certificate rendered from payload",
+        extra={"event": "render_certificate_direct_success", "user_id": principal.user_id},
     )
 
     return templates.TemplateResponse(

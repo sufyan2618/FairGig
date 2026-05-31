@@ -2,6 +2,7 @@ import Grievance from "../models/grievance.model.js";
 import { parsePagination } from "../utils/pagination.js";
 import { buildPaginationMeta, toPublicComplaint } from "../utils/responseMapper.js";
 import { raise } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 import { buildSuggestedClusters } from "../services/clusterSuggestionService.js";
 
 const pickTopCategory = (categories) => {
@@ -23,6 +24,8 @@ const pickTopCategory = (categories) => {
 };
 
 export const listClusters = async (_req, res) => {
+  logger.info("clusters list requested", { event: "list_clusters" });
+
   const aggregates = await Grievance.aggregate([
     {
       $match: {
@@ -63,12 +66,14 @@ export const listClusters = async (_req, res) => {
     },
   }));
 
+  logger.info("clusters list returned", { event: "list_clusters_success", count: data.length });
   res.status(200).json(data);
 };
 
 export const getClusterComplaints = async (req, res) => {
   const pagination = parsePagination(req.query);
   const clusterId = req.params.cluster_id;
+  logger.info("cluster complaints requested", { event: "get_cluster_complaints", cluster_id: clusterId });
 
   const [items, total] = await Promise.all([
     Grievance.find({ clusterId })
@@ -77,6 +82,12 @@ export const getClusterComplaints = async (req, res) => {
       .limit(pagination.limit),
     Grievance.countDocuments({ clusterId }),
   ]);
+
+  logger.info("cluster complaints returned", {
+    event: "get_cluster_complaints_success",
+    cluster_id: clusterId,
+    total,
+  });
 
   res.status(200).json({
     data: items.map((item) => toPublicComplaint(item, { viewerUserId: req.auth?.userId })),
@@ -90,6 +101,10 @@ export const getClusterComplaints = async (req, res) => {
 
 export const suggestClusters = async (req, res) => {
   const complaintIds = req.body.complaint_ids;
+  logger.info("cluster suggestions requested", {
+    event: "suggest_clusters",
+    complaint_count: complaintIds.length,
+  });
 
   const complaints = await Grievance.find({
     _id: { $in: complaintIds },
@@ -100,6 +115,11 @@ export const suggestClusters = async (req, res) => {
   }
 
   const suggestions = buildSuggestedClusters(complaints);
+
+  logger.info("cluster suggestions generated", {
+    event: "suggest_clusters_success",
+    suggestion_count: suggestions.length,
+  });
 
   res.status(200).json({
     suggested_clusters: suggestions,

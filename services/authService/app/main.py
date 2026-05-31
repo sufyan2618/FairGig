@@ -5,29 +5,31 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-import sys 
-import logging
-from app.core.config import settings
-from app.core.rate_limiter import enforce_rate_limit, get_client_ip
-from app.core.redis_client import close_redis
-from app.routers.auth import router as auth_router
-import json
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_fastapi_instrumentator import Instrumentator
+
+from app.core.config import settings
 from app.core.database import async_engine
+from app.core.logging_config import RequestLoggingMiddleware, get_logger, setup_logging
+from app.core.rate_limiter import enforce_rate_limit, get_client_ip
+from app.core.redis_client import close_redis
+from app.routers.auth import router as auth_router
+
+logger = setup_logging("auth-service")
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    logger.info("auth-service starting", extra={"event": "service_start"})
     yield
     await close_redis()
-
+    logger.info("auth-service stopped", extra={"event": "service_stop"})
 
 
 app = FastAPI(
@@ -37,52 +39,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Structured JSON logging — Loki can parse and label these fields
-class JSONFormatter(logging.Formatter):
-    def format(self, record):
-        log = {
-            "time": self.formatTime(record),
-            "level": record.levelname,
-            "service": "auth-service",   # change per service
-            "message": record.getMessage(),
-        }
-        # Attach trace_id if inside an active span — links logs to traces
-        span = trace.get_current_span()
-        if span.is_recording():
-            ctx = span.get_span_context()
-            log["trace_id"] = format(ctx.trace_id, "032x")
-            log["span_id"] = format(ctx.span_id, "016x")
-        return json.dumps(log)
-
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(JSONFormatter())
-
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[handler]
-)
-
-resource = Resource.create({"service.name": "auth-service"})  
+resource = Resource.create({"service.name": "auth-service"})
 provider = TracerProvider(resource=resource)
 provider.add_span_processor(
     BatchSpanProcessor(
         OTLPSpanExporter(
             endpoint="http://alloy.monitoring.svc.cluster.local:4317",
-            insecure=True
+            insecure=True,
         )
     )
 )
 trace.set_tracer_provider(provider)
 
-# Auto-instrument FastAPI and SQLAlchemy — zero manual span code needed
 FastAPIInstrumentor.instrument_app(app)
-SQLAlchemyInstrumentor().instrument(engine=async_engine.sync_engine)  
-
+SQLAlchemyInstrumentor().instrument(engine=async_engine.sync_engine)
 Instrumentator().instrument(app).expose(app)
 
-
-
+app.add_middleware(RequestLoggingMiddleware, service_name="auth-service")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_cors_origins,
@@ -103,6 +76,14 @@ async def api_rate_limit_middleware(request: Request, call_next):
                 window_seconds=settings.API_RATE_LIMIT_WINDOW_SECONDS,
             )
         except HTTPException as exc:
+            get_logger("auth-service.rate_limit").warning(
+                "rate limit exceeded",
+                extra={
+                    "event": "rate_limit_exceeded",
+                    "path": request.url.path,
+                    "client_ip": get_client_ip(request),
+                },
+            )
             return JSONResponse(
                 status_code=exc.status_code,
                 content={"detail": exc.detail},

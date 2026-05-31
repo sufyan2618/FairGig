@@ -7,6 +7,7 @@ import { deleteS3ObjectIfExists, resolveScreenshotAccessUrl, uploadScreenshotToS
 import type { ShiftBody } from '../types/earnings.js';
 import { createTemplateCsv, parseCsvBuffer } from '../utils/csv.js';
 import { raise } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 import {
   isUuid,
   minutesToHours,
@@ -128,6 +129,7 @@ const toShiftResponse = (shift: typeof shiftLogsTable.$inferSelect): ShiftRespon
 export const createShift = async (req: Request, res: Response): Promise<void> => {
   const workerId = assertWorkerUser(req);
   const parsed = parseShiftBody(req.body as ShiftBody);
+  logger.info('shift creation requested', { event: 'create_shift', worker_id: workerId, platform: parsed.platform });
 
   const createdRows = await db
     .insert(shiftLogsTable)
@@ -139,6 +141,7 @@ export const createShift = async (req: Request, res: Response): Promise<void> =>
     .returning();
 
   const created = mustExist(createdRows[0], 500, 'INTERNAL_SERVER_ERROR', 'Failed to create shift log.');
+  logger.info('shift created', { event: 'create_shift_success', shift_id: created.id, worker_id: workerId });
 
   res.status(201).json({ data: toShiftResponse(created) });
 };
@@ -202,6 +205,14 @@ export const listShifts = async (req: Request, res: Response): Promise<void> => 
   ]);
 
   const total = totalRows[0]?.total ?? 0;
+  logger.info('shifts listed', {
+    event: 'list_shifts',
+    worker_id: workerId,
+    page,
+    limit,
+    total,
+    is_internal: isInternal,
+  });
 
   res.status(200).json({
     data: items.map(toShiftResponse),
@@ -225,6 +236,7 @@ export const getShiftById = async (req: Request, res: Response): Promise<void> =
     .limit(1);
 
   const shift = mustExist(rows[0], 404, 'SHIFT_NOT_FOUND', 'Shift log not found.');
+  logger.info('shift fetched', { event: 'get_shift', shift_id: shiftId, worker_id: workerId });
 
   res.status(200).json({ data: toShiftResponse(shift) });
 };
@@ -256,6 +268,7 @@ export const updateShift = async (req: Request, res: Response): Promise<void> =>
     .returning();
 
   const updated = mustExist(updatedRows[0], 500, 'INTERNAL_SERVER_ERROR', 'Failed to update shift log.');
+  logger.info('shift updated', { event: 'update_shift_success', shift_id: shiftId, worker_id: workerId });
 
   res.status(200).json({ data: toShiftResponse(updated) });
 };
@@ -288,6 +301,7 @@ export const deleteShift = async (req: Request, res: Response): Promise<void> =>
     })
     .where(eq(shiftLogsTable.id, shiftId));
 
+  logger.info('shift deleted', { event: 'delete_shift_success', shift_id: shiftId, worker_id: workerId });
   res.status(200).json({ message: 'Shift log deleted successfully.' });
 };
 
@@ -303,6 +317,11 @@ export const importShiftsCsv = async (req: Request, res: Response): Promise<void
   const parsed = await parseCsvBuffer(file.buffer);
 
   if (parsed.failures.length > 0) {
+    logger.warn('csv import validation failed', {
+      event: 'import_shifts_csv_failed',
+      worker_id: workerId,
+      failed_rows: parsed.failures.length,
+    });
     const failurePreview = parsed.failures
       .slice(0, 3)
       .map((failure) => `row ${failure.row}: ${failure.reason}`)
@@ -341,6 +360,12 @@ export const importShiftsCsv = async (req: Request, res: Response): Promise<void
         verificationStatus: 'pending' as const,
       })),
     );
+  });
+
+  logger.info('shifts imported from csv', {
+    event: 'import_shifts_csv_success',
+    worker_id: workerId,
+    imported: parsed.parsed.length,
   });
 
   res.status(201).json({
@@ -414,6 +439,12 @@ export const uploadShiftScreenshot = async (req: Request, res: Response): Promis
     }
   }
 
+  logger.info('shift screenshot uploaded', {
+    event: 'upload_shift_screenshot_success',
+    shift_id: shiftId,
+    worker_id: workerId,
+  });
+
   res.status(200).json({
     data: toShiftResponse(updated),
     message: 'Screenshot uploaded successfully.',
@@ -445,6 +476,13 @@ export const getShiftScreenshot = async (req: Request, res: Response): Promise<v
   }
 
   const screenshotUrl = await resolveScreenshotAccessUrl(shift.screenshotUrl, shift.screenshotStoragePath);
+
+  logger.info('shift screenshot accessed', {
+    event: 'get_shift_screenshot',
+    shift_id: shift.id,
+    user_id: authUser.id,
+    role: authUser.role,
+  });
 
   res.status(200).json({
     shift_id: shift.id,

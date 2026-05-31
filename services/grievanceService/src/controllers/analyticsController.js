@@ -1,4 +1,5 @@
 import Grievance from "../models/grievance.model.js";
+import { logger } from "../utils/logger.js";
 
 const getCurrentWeekRangeUtc = () => {
   const now = new Date();
@@ -13,6 +14,7 @@ const getCurrentWeekRangeUtc = () => {
 };
 
 export const topCategories = async (_req, res) => {
+  logger.info("top categories requested", { event: "top_categories" });
   const { start, end } = getCurrentWeekRangeUtc();
 
   const rows = await Grievance.aggregate([
@@ -33,6 +35,7 @@ export const topCategories = async (_req, res) => {
     { $sort: { count: -1 } },
   ]);
 
+  logger.info("top categories returned", { event: "top_categories_success", count: rows.length });
   res.status(200).json(
     rows.map((row) => ({
       category: row._id,
@@ -42,6 +45,11 @@ export const topCategories = async (_req, res) => {
 };
 
 export const complaintsByPlatform = async (req, res) => {
+  logger.info("complaints by platform requested", {
+    event: "complaints_by_platform",
+    date_from: req.query.date_from,
+    date_to: req.query.date_to,
+  });
   const match = {};
   if (req.query.date_from || req.query.date_to) {
     match.createdAt = {};
@@ -76,10 +84,15 @@ export const complaintsByPlatform = async (req, res) => {
     byPlatform.set(key, current);
   }
 
+  logger.info("complaints by platform returned", {
+    event: "complaints_by_platform_success",
+    platform_count: byPlatform.size,
+  });
   res.status(200).json(Array.from(byPlatform.values()));
 };
 
 export const escalationRatio = async (_req, res) => {
+  logger.info("escalation ratio requested", { event: "escalation_ratio" });
   const rows = await Grievance.aggregate([
     {
       $group: {
@@ -101,5 +114,6 @@ export const escalationRatio = async (_req, res) => {
     response.total += row.count;
   }
 
+  logger.info("escalation ratio returned", { event: "escalation_ratio_success", total: response.total });
   res.status(200).json(response);
 };

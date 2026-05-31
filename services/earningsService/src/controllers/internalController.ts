@@ -4,6 +4,7 @@ import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { shiftLogsTable } from '../db/schema.js';
 import { raise } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 import { isUuid, minutesToHours, parseDateIso } from '../utils/validation.js';
 
 const getPathParam = (req: Request, name: string): string => {
@@ -38,6 +39,7 @@ const getSingleQueryValue = (value: unknown): string | undefined => {
 
 export const getWorkerSummary = async (req: Request, res: Response): Promise<void> => {
   const workerId = getPathParam(req, 'workerId');
+  logger.info('worker summary requested', { event: 'get_worker_summary', worker_id: workerId });
 
   if (!isUuid(workerId)) {
     raise(400, 'VALIDATION_ERROR', 'workerId path parameter must be a valid UUID.');
@@ -114,6 +116,13 @@ export const getWorkerSummary = async (req: Request, res: Response): Promise<voi
     breakdownMap.set(shift.platform, existing);
   }
 
+  logger.info('worker summary computed', {
+    event: 'get_worker_summary_success',
+    worker_id: workerId,
+    total_shifts_in_range: totalShiftsInRange,
+    verified_shifts: shifts.length,
+  });
+
   res.status(200).json({
     worker_id: workerId,
     date_from: dateFrom ?? null,
@@ -141,6 +150,11 @@ export const getWorkerSummary = async (req: Request, res: Response): Promise<voi
 export const getAggregateMedian = async (req: Request, res: Response): Promise<void> => {
   const workerCategory = getSingleQueryValue(req.query.worker_category)?.trim();
   const cityZone = getSingleQueryValue(req.query.city_zone)?.trim();
+  logger.info('aggregate median requested', {
+    event: 'get_aggregate_median',
+    worker_category: workerCategory,
+    city_zone: cityZone,
+  });
 
   if (!workerCategory || !cityZone) {
     raise(400, 'VALIDATION_ERROR', 'worker_category and city_zone are required query parameters.');
@@ -177,6 +191,10 @@ export const getAggregateMedian = async (req: Request, res: Response): Promise<v
   const cohortSize = workerTotals.length;
 
   if (cohortSize < 5) {
+    logger.info('aggregate median cohort too small', {
+      event: 'get_aggregate_median_small_cohort',
+      cohort_size: cohortSize,
+    });
     res.status(200).json({
       worker_category: workerCategory,
       city_zone: cityZoneValue,
@@ -195,6 +213,12 @@ export const getAggregateMedian = async (req: Request, res: Response): Promise<v
   const median = sorted.length % 2 === 0
     ? Math.round((sorted[middle - 1]! + sorted[middle]!) / 2)
     : sorted[middle]!;
+
+  logger.info('aggregate median computed', {
+    event: 'get_aggregate_median_success',
+    cohort_size: cohortSize,
+    median_net: median,
+  });
 
   res.status(200).json({
     worker_category: workerCategoryValue,

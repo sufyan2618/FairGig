@@ -1,6 +1,13 @@
 import { HttpError } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 
-export const notFoundHandler = (_req, res) => {
+export const notFoundHandler = (req, res) => {
+  logger.warn("endpoint not found", {
+    event: "not_found",
+    method: req.method,
+    path: req.originalUrl,
+  });
+
   res.status(404).json({
     error: "NOT_FOUND",
     message: "Endpoint not found.",
@@ -8,8 +15,17 @@ export const notFoundHandler = (_req, res) => {
   });
 };
 
-export const errorHandler = (err, _req, res, _next) => {
+export const errorHandler = (err, req, res, _next) => {
   if (err instanceof HttpError) {
+    logger.warn("application error", {
+      event: "app_error",
+      method: req.method,
+      path: req.originalUrl,
+      error_code: err.code,
+      status: err.status,
+      message: err.message,
+    });
+
     res.status(err.status).json({
       error: err.code,
       message: err.message,
@@ -20,6 +36,12 @@ export const errorHandler = (err, _req, res, _next) => {
   }
 
   if (err?.name === "ValidationError") {
+    logger.warn("validation error", {
+      event: "validation_error",
+      method: req.method,
+      path: req.originalUrl,
+    });
+
     res.status(422).json({
       error: "VALIDATION_ERROR",
       message: "Validation failed.",
@@ -30,6 +52,12 @@ export const errorHandler = (err, _req, res, _next) => {
   }
 
   if (err?.name === "CastError") {
+    logger.warn("invalid resource id", {
+      event: "cast_error",
+      method: req.method,
+      path: req.originalUrl,
+    });
+
     res.status(400).json({
       error: "INVALID_ID",
       message: "Invalid resource identifier.",
@@ -38,7 +66,12 @@ export const errorHandler = (err, _req, res, _next) => {
     return;
   }
 
-  console.error("Unhandled grievance service error", err);
+  logger.error("unhandled grievance service error", err, {
+    event: "unhandled_error",
+    method: req.method,
+    path: req.originalUrl,
+  });
+
   res.status(500).json({
     error: "INTERNAL_SERVER_ERROR",
     message: "An unexpected error occurred.",

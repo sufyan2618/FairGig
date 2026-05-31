@@ -7,6 +7,7 @@ import { shiftLogsTable, verificationDecisionsTable } from '../db/schema.js';
 import { resolveScreenshotAccessUrl } from '../lib/s3.js';
 import type { VerificationDecisionBody } from '../types/earnings.js';
 import { raise } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 import { parseDateIso, parsePositiveInt } from '../utils/validation.js';
 
 const DEFAULT_PAGE = 1;
@@ -62,7 +63,8 @@ const ensureVerifier = (req: Request): string => {
 };
 
 export const getVerificationQueue = async (req: Request, res: Response): Promise<void> => {
-  ensureVerifier(req);
+  const verifierId = ensureVerifier(req);
+  logger.info('verification queue requested', { event: 'get_verification_queue', verifier_id: verifierId });
 
   const page = parsePositiveInt(getSingleQueryValue(req.query.page), DEFAULT_PAGE);
   const limit = Math.min(parsePositiveInt(getSingleQueryValue(req.query.limit), DEFAULT_LIMIT), MAX_LIMIT);
@@ -88,6 +90,12 @@ export const getVerificationQueue = async (req: Request, res: Response): Promise
   ]);
 
   const total = totals[0]?.total ?? 0;
+  logger.info('verification queue returned', {
+    event: 'get_verification_queue_success',
+    verifier_id: verifierId,
+    total,
+    page,
+  });
 
   res.status(200).json({
     data: items.map((item) => ({
@@ -109,8 +117,13 @@ export const getVerificationQueue = async (req: Request, res: Response): Promise
 };
 
 export const getVerificationById = async (req: Request, res: Response): Promise<void> => {
-  ensureVerifier(req);
+  const verifierId = ensureVerifier(req);
   const shiftId = getPathParam(req, 'id');
+  logger.info('verification detail requested', {
+    event: 'get_verification_by_id',
+    verifier_id: verifierId,
+    shift_id: shiftId,
+  });
 
   const rows = await db
     .select()
@@ -194,6 +207,13 @@ export const submitVerificationDecision = async (req: Request, res: Response): P
     decidedAt: now,
   });
 
+  logger.info('verification decision submitted', {
+    event: 'submit_verification_decision_success',
+    verifier_id: verifierId,
+    shift_id: shiftId,
+    status,
+  });
+
   res.status(200).json({
     data: {
       id: updated.id,
@@ -208,6 +228,10 @@ export const submitVerificationDecision = async (req: Request, res: Response): P
 
 export const getVerificationHistory = async (req: Request, res: Response): Promise<void> => {
   const verifierId = ensureVerifier(req);
+  logger.info('verification history requested', {
+    event: 'get_verification_history',
+    verifier_id: verifierId,
+  });
 
   const page = parsePositiveInt(getSingleQueryValue(req.query.page), DEFAULT_PAGE);
   const limit = Math.min(parsePositiveInt(getSingleQueryValue(req.query.limit), DEFAULT_LIMIT), MAX_LIMIT);
@@ -253,6 +277,11 @@ export const getVerificationHistory = async (req: Request, res: Response): Promi
   const shiftMap = new Map(shifts.map((shift) => [shift.id, shift]));
 
   const total = totals[0]?.total ?? 0;
+  logger.info('verification history returned', {
+    event: 'get_verification_history_success',
+    verifier_id: verifierId,
+    total,
+  });
 
   res.status(200).json({
     data: rows.map((row) => {

@@ -2,6 +2,7 @@ import Grievance from "../models/grievance.model.js";
 import { parsePagination } from "../utils/pagination.js";
 import { buildPaginationMeta, toPublicComplaint } from "../utils/responseMapper.js";
 import { raise } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 
 const buildFilters = (query) => {
   const filters = {};
@@ -30,6 +31,13 @@ const buildFilters = (query) => {
 };
 
 export const createComplaint = async (req, res) => {
+  logger.info("complaint creation requested", {
+    event: "create_complaint",
+    user_id: req.auth.userId,
+    platform: req.body.platform,
+    category: req.body.category,
+  });
+
   const grievance = await Grievance.create({
     workerId: req.auth.userId,
     platform: req.body.platform,
@@ -41,6 +49,12 @@ export const createComplaint = async (req, res) => {
     escalationStatus: "open",
     moderationNote: null,
     isAnonymous: true,
+  });
+
+  logger.info("complaint created", {
+    event: "create_complaint_success",
+    complaint_id: grievance.id,
+    user_id: req.auth.userId,
   });
 
   res.status(201).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
@@ -58,6 +72,13 @@ export const listComplaints = async (req, res) => {
     Grievance.countDocuments(filters),
   ]);
 
+  logger.info("complaints listed", {
+    event: "list_complaints",
+    user_id: req.auth?.userId,
+    page: pagination.page,
+    total,
+  });
+
   res.status(200).json({
     data: items.map((item) => toPublicComplaint(item, { viewerUserId: req.auth?.userId })),
     pagination: buildPaginationMeta({
@@ -73,6 +94,12 @@ export const getComplaintById = async (req, res) => {
   if (!grievance) {
     raise(404, "COMPLAINT_NOT_FOUND", "Complaint not found.");
   }
+
+  logger.info("complaint fetched", {
+    event: "get_complaint",
+    complaint_id: req.params.id,
+    user_id: req.auth?.userId,
+  });
 
   res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
@@ -96,6 +123,12 @@ export const deleteComplaint = async (req, res) => {
   }
 
   await grievance.deleteOne();
+
+  logger.info("complaint deleted", {
+    event: "delete_complaint_success",
+    complaint_id: req.params.id,
+    user_id: req.auth.userId,
+  });
 
   res.status(200).json({
     message: "Complaint deleted successfully.",

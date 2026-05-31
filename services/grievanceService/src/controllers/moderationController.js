@@ -1,6 +1,7 @@
 import Grievance from "../models/grievance.model.js";
 import { toPublicComplaint } from "../utils/responseMapper.js";
 import { raise } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 
 const allowedTransitions = {
   open: ["escalated", "resolved"],
@@ -16,6 +17,12 @@ export const updateTags = async (req, res) => {
 
   grievance.tags = req.body.tags;
   await grievance.save();
+
+  logger.info("complaint tags updated", {
+    event: "update_tags_success",
+    complaint_id: req.params.id,
+    tag_count: req.body.tags.length,
+  });
 
   res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
@@ -45,6 +52,13 @@ export const updateStatus = async (req, res) => {
 
   await grievance.save();
 
+  logger.info("complaint status updated", {
+    event: "update_status_success",
+    complaint_id: req.params.id,
+    from_status: currentStatus,
+    to_status: nextStatus,
+  });
+
   res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
 
@@ -58,6 +72,12 @@ export const updateCluster = async (req, res) => {
   grievance.clusterLabel = req.body.cluster_label;
 
   await grievance.save();
+
+  logger.info("complaint cluster updated", {
+    event: "update_cluster_success",
+    complaint_id: req.params.id,
+    cluster_id: req.body.cluster_id,
+  });
 
   res.status(200).json({ data: toPublicComplaint(grievance, { viewerUserId: req.auth?.userId }) });
 };
