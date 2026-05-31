@@ -9,6 +9,7 @@ spec:
   selector:
     app: anamoly-service
   ports:
-    - port: 8002
+    - name: http
+      port: 8002
       targetPort: 8002
   type: ClusterIP

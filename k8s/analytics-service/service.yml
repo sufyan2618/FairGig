@@ -9,6 +9,7 @@ spec:
   selector:
     app: analytics-service
   ports:
-    - port: 8003
+    - name: http
+      port: 8003
       targetPort: 8003
   type: ClusterIP

@@ -9,6 +9,7 @@ spec:
   selector:
     app: certificate-service
   ports:
-    - port: 8004
+    - name: http
+      port: 8004
       targetPort: 8004
   type: ClusterIP
