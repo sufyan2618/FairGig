@@ -18,7 +18,7 @@ spec:
       interval: 15s
       relabelings:
         - sourceLabels: [__meta_kubernetes_service_name]
-          targetLabel: app                   
+          targetLabel: app_name               
         - sourceLabels: [__meta_kubernetes_namespace]
           targetLabel: namespace
         - sourceLabels: [__meta_kubernetes_pod_name]
