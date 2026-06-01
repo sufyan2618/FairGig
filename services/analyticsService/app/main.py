@@ -46,7 +46,7 @@ Instrumentator(
     should_group_untemplated=True,
     excluded_handlers=[],
 ).add(
-    metrics.info(
+    metrics.Info(
         metric_name="fastapi_app_info",
         metric_doc="FastAPI application information",
         app_name="analytics-service",
