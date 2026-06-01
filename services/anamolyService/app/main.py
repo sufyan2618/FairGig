@@ -42,7 +42,7 @@ Instrumentator(
     should_group_untemplated=True,
     excluded_handlers=[],
 ).add(
-    metrics.Info(
+    metrics.default(
         custom_labels={"app_name": "anomaly-service"},
     )
 ).instrument(app).expose(app)
