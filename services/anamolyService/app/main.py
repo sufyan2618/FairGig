@@ -43,9 +43,7 @@ Instrumentator(
     excluded_handlers=[],
 ).add(
     metrics.Info(
-        metric_name="fastapi_app_info",
-        metric_doc="FastAPI application information",
-        app_name="anomaly-service",
+        custom_labels={"app_name": "anomaly-service"},
     )
 ).instrument(app).expose(app)
 

@@ -40,12 +40,9 @@ Instrumentator(
     should_group_status_codes=True,
     should_ignore_untemplated=True,
     should_group_untemplated=True,
-    excluded_handlers=[],
 ).add(
-    metrics.Info(
-        metric_name="fastapi_app_info",
-        metric_doc="FastAPI application information",
-        app_name="certificate-service",
+    metrics.default(
+        custom_labels={"app_name": "certificate-service"},
     )
 ).instrument(app).expose(app)
 
